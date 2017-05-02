@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/lcneves/livre3d/issues"
   },
-  "homepage": "https://github.com/lcneves/livre3d#readme"
+  "homepage": "https://github.com/lcneves/livre3d#readme",
+  "dependencies": {
+    "livre-client": "0.0.0"
+  }
 }
