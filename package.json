@@ -1,0 +1,23 @@
+{
+  "name": "livre3d",
+  "version": "0.0.0",
+  "description": "Livre3D rendering engine for the Livre project.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcneves/livre3d.git"
+  },
+  "keywords": [
+    "3d",
+    "Livre"
+  ],
+  "author": "Lucas Neves <lcneves@gmail.com> (https://www.lcneves.com)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/lcneves/livre3d/issues"
+  },
+  "homepage": "https://github.com/lcneves/livre3d#readme"
+}
