@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/lcneves/livre3d#readme",
   "dependencies": {
-    "livre-client": "0.0.0"
+    "livre-client": ">=0.0.0"
   }
 }
