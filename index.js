@@ -17,4 +17,5 @@ module.exports = function (options) {
   require('livre-client')({
     engine: engine
   });
+};
 
