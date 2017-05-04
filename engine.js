@@ -9,12 +9,11 @@
 
 module.exports = function (options) {
   
-  var width, height, aspectRatio, pixelToWorldRatio;
+  var width, height;
   function setViewportParameters () {
     width = window.innerWidth;
     height = window.innerHeight;
-    aspectRatio = width / height;
-  };
+  }
   setViewportParameters();
 
   const THREE = require('three');
@@ -63,19 +62,19 @@ module.exports = function (options) {
 
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
-  var makeShell = function makeShell(options) {
+  var makeShell = function makeShell() {
     // TODO: config based on options
 
     resetScene();
 
     makeHeader();
 
-  }
+  };
 
-  function makeHeader(options) {
+  function makeHeader() {
     theme.makeLogo.then(logo => body.add(logo));
     theme.makeMenu.then(menu => body.add(menu));
-  };
+  }
 
   return {
     makeShell: makeShell
