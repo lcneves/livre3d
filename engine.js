@@ -71,9 +71,16 @@ module.exports = function (options) {
 
   };
 
-  function makeHeader() {
-    theme.makeLogo.then(logo => body.add(logo));
-    theme.makeMenu.then(menu => body.add(menu));
+  async function makeHeader() {
+    try {
+      var logo = await theme.makeLogo();
+      var menu = await theme.makeMenu();
+      body.add(logo);
+      body.add(menu);
+    }
+    catch(e) {
+      // TODO: handle errors
+    }
   }
 
   return {
