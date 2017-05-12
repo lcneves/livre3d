@@ -71,17 +71,17 @@ module.exports = function (options) {
 
   };
 
-  async function makeHeader() {
-    try {
-      var logo = await theme.makeLogo();
-      var menu = await theme.makeMenu();
-      body.add(logo);
-      body.add(menu);
-    }
-    catch(e) {
-      // TODO: handle errors
-    }
+  function makeHeader() {
+    theme.makeMenu()
+      .then(menu => body.add(menu)); // TODO: catch
+
+    theme.makeLogo()
+      .then(logo => body.add(logo));
   }
+
+  // Test screen with a theme-generated grid.
+  // TODO: Development only!
+  theme.makeGrid().then(grid => scene.add(grid));
 
   return {
     makeShell: makeShell
