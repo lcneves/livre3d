@@ -9,10 +9,11 @@
 
 'use strict';
 
-module.exports = function (options) {
+module.exports.utils = require('./utils.js');
 
-  // These options were passed by the theme.
-  const engine = require('./engine.js')(options);
+module.exports.init = function (theme) {
+
+  const engine = require('./engine.js')(theme);
 
   require('livre-client')({
     engine: engine
