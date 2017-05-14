@@ -9,7 +9,7 @@
 
 'use strict';
 
-module.exports.utils = require('./utils.js');
+module.exports.ObjectLivre = require('./object-livre.js');
 
 module.exports.init = function (theme) {
 

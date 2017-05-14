@@ -9,13 +9,6 @@
 
 module.exports = function (options) {
   
-  var width, height;
-  function setViewportParameters () {
-    width = window.innerWidth;
-    height = window.innerHeight;
-  }
-  setViewportParameters();
-
   const THREE = require('three');
 
   const theme = options.theme;
@@ -28,15 +21,20 @@ module.exports = function (options) {
   var renderer = new THREE.WebGLRenderer({
     antialias: true
   });
-  renderer.setSize( width, height );
+  renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
 
   // Resize canvas on window resize
   window.addEventListener('resize', function () {
-    setViewportParameters();
-    renderer.setSize(width, height);
+    var aspectRatio = window.innerWidth / window.innerHeight;
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
     if (camera) {
-      camera.update(width, height);
+      camera.aspectRatio = aspectRatio;
+    }
+    if (body) {
+      body.aspectRatio = aspectRatio;
     }
   });
 
@@ -50,9 +48,9 @@ module.exports = function (options) {
 
   function resetScene() {
     scene = new theme.Scene();
-    camera = new theme.Camera(width, height);
+    camera = new theme.Camera(window.innerWidth, window.innerHeight);
     lights = new theme.Lights();
-    body = new theme.Body();
+    body = new theme.Body(window.innerWidth / window.innerHeight);
 
     scene.add(lights);
     scene.add(body);
@@ -67,21 +65,29 @@ module.exports = function (options) {
 
     resetScene();
 
-    makeHeader();
+    makeTestCorners();
+
+//    makeHeader();
 
   };
 
   function makeHeader() {
     theme.makeMenu()
-      .then(menu => body.add(menu)); // TODO: catch
+      .then(menu => body.addRelative(menu)); // TODO: catch
 
     theme.makeLogo()
-      .then(logo => body.add(logo));
+      .then(logo => body.addRelative(logo));
+  }
+
+  function makeTestCorners() {
+    theme.makeCornersArray.forEach(func => {
+      func().then(corner => body.addRelative(corner));
+    });
   }
 
   // Test screen with a theme-generated grid.
   // TODO: Development only!
-  theme.makeGrid().then(grid => scene.add(grid));
+  theme.makeGrid().then(grid => body.addRelative(grid));
 
   return {
     makeShell: makeShell
