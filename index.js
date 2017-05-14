@@ -9,7 +9,7 @@
 
 'use strict';
 
-module.exports.ObjectLivre = require('./object-livre.js');
+module.exports.Object3D = require('./object3d.js');
 
 module.exports.init = function (theme) {
 

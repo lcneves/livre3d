@@ -1,8 +1,8 @@
 /*
- * utils.js
+ * object3d.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Utilities for the Livre3D engine.
+ * Exports an object that extends THREE.Object3D with extra functionality.
  * Part of the Livre project.
  */
 
@@ -118,7 +118,7 @@ function parseRelativePosition(position) {
         relative = // TODO: continue when sober.
 }
 
-class ObjectLivre extends THREE.Object3D {
+class Object3D extends THREE.Object3D {
   constructor(mesh) {
     super();
 
@@ -158,4 +158,4 @@ class ObjectLivre extends THREE.Object3D {
   }
 }
 
-module.exports = ObjectLivre;
+module.exports = Object3D;
