@@ -115,7 +115,7 @@ function parseRelativePosition(position) {
       let axis = position[prop];
       let indexSemicolon = axis.indexOf(':');
       if (indexSemicolon !== -1) {
-        relative = 
+        relative = // TODO: continue when sober.
 }
 
 class ObjectLivre extends THREE.Object3D {
