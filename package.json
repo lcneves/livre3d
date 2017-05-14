@@ -1,6 +1,6 @@
 {
   "name": "livre3d",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Livre3D rendering engine for the Livre project.",
   "main": "index.js",
   "scripts": {
