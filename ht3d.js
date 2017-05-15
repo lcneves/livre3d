@@ -48,13 +48,13 @@ function parse(ht3d) {
               break;
 
             case '/':
-              }
-              else {
-                currentTag += thisChar;
-              }
+              reading = 'tag close';
+              break;
           }
         }
-        break;
+        else {
+          currentTag += thisChar;
+        }
 
       case 'tag close':
         break;
