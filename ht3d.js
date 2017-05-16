@@ -18,13 +18,65 @@ function parse(ht3d) {
   var currentProp = '';
   var propValue 
   var text = '';
+
+  function openTag() {
+    reading = "tag name";
+  }
+  function startTag(thisChar) {
+    reading = 'tag name';
+    currentTag = thisChar;
+  }
+  function writeTag(thisChar) {
+    currentTag += thisChar;
+  }
+  function endTag() {
+    reading = 'nothing';
+    if (currentTag) {
+      let object = new Object3D();
+      object._tag = currentTag;
+
+      if (currentObject) {
+        currentObject.add(object);
+      }
+      currentObject = object;
+    }
+  }
+  function startProp(thisChar) {
+    reading = 'property';
+    currentProp = thisChar;
+  }
+  function writeProp(thisChar) {
+    currentProp += thisChar;
+  }
+  function startValue() {
+    reading = 'value';
+    propValue = '';
+  }
+  function writeValue(thisChar) {
+    propValue += thisChar;
+  }
+  function endProp() {
+    reading = 'nothing';
+    currentObject['_' + currentProp] = propValue;
+  }
+  function startText(thisChar) {
+    reading = 'text';
+    text = thisChar;
+  }
+  function writeText(thisChar) {
+    text += thisChar;
+  }
+  function endText() {
+    if (currentObject) {
+      currentObject._text = text;
+    }
+
   for (let i = 0; i < ht3d.length; i++) {
     let thisChar = ht3d.charAt(i);
 
     switch (reading) {
       case 'nothing':
         if (thisChar === '<') {
-          reading = 'tag name';
         }
         else if (!/\s/.test(thisChar)) { // Is not whitespace
           reading = 'text';
@@ -36,14 +88,6 @@ function parse(ht3d) {
         if (!/\s/.test(thisChar)) {
           switch (thisChar) {
             case '>':
-              if (currentTag) {
-                let object = new Object3D();
-
-                if (currentObject) {
-                  currentObject.add(object);
-                }
-                currentObject = object;
-              }
               reading = 'nothing';
               break;
 
@@ -53,10 +97,14 @@ function parse(ht3d) {
           }
         }
         else {
-          currentTag += thisChar;
         }
 
       case 'tag close':
+        if (thisChar === '>') {
+          if (currentObject) {
+            currentObject = currentObject.parent;
+          }
+        }
         break;
 
       case 'property':
