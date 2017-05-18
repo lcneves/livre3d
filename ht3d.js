@@ -12,25 +12,25 @@ const Object3D = require('./object3d.js');
 
 
 function parse(ht3d) {
-  var reading = 'nothing';
+  // Reading can be: beginning, tag name, property, value, text
+  var reading = 'beginning';
+  var finished = false;
   var currentObject = null;
   var currentTag = '';
   var currentProp = '';
   var propValue 
   var text = '';
 
+  // Builder
   function openTag() {
     reading = "tag name";
-  }
-  function startTag(thisChar) {
-    reading = 'tag name';
-    currentTag = thisChar;
+    currentTag = '';
+    finished = false;
   }
   function writeTag(thisChar) {
     currentTag += thisChar;
   }
   function endTag() {
-    reading = 'nothing';
     if (currentTag) {
       let object = new Object3D();
       object._tag = currentTag;
@@ -40,26 +40,39 @@ function parse(ht3d) {
       }
       currentObject = object;
     }
+    finished = true;
+    currentTag = '';
+  }
+  function closeTag() {
+    if (currentObject && currentObject.parent) {
+      currentObject = currentObject.parent;
+    }
   }
   function startProp(thisChar) {
     reading = 'property';
+    finished = false;
     currentProp = thisChar;
   }
   function writeProp(thisChar) {
     currentProp += thisChar;
   }
+  function endProp() {
+    finished = true;
+  }
   function startValue() {
+    finished = false'
     reading = 'value';
     propValue = '';
   }
   function writeValue(thisChar) {
     propValue += thisChar;
   }
-  function endProp() {
-    reading = 'nothing';
+  function endValue() {
+    finished = true;
     currentObject['_' + currentProp] = propValue;
   }
   function startText(thisChar) {
+    finished = false;
     reading = 'text';
     text = thisChar;
   }
@@ -67,53 +80,64 @@ function parse(ht3d) {
     text += thisChar;
   }
   function endText() {
+    finished = true;
     if (currentObject) {
       currentObject._text = text;
     }
+  }
 
+  // Director
   for (let i = 0; i < ht3d.length; i++) {
     let thisChar = ht3d.charAt(i);
 
     switch (reading) {
-      case 'nothing':
+      case 'beginning':
         if (thisChar === '<') {
-        }
-        else if (!/\s/.test(thisChar)) { // Is not whitespace
-          reading = 'text';
-          text = thisChar;
+          openTag();
         }
         break;
-
       case 'tag name':
-        if (!/\s/.test(thisChar)) {
-          switch (thisChar) {
-            case '>':
-              reading = 'nothing';
-              break;
-
-            case '/':
-              reading = 'tag close';
-              break;
+        if (!finished) {
+          if (!/\s/.test(thisChar)) {
+            if (thisChar === '>') {
+              endTag();
+            }
+            else {
+              writeTag(thisChar);
+            }
+          }
+          else if (currentTag) {
+            closeTag();
           }
         }
         else {
-        }
-
-      case 'tag close':
-        if (thisChar === '>') {
-          if (currentObject) {
-            currentObject = currentObject.parent;
+          if (!/\s/.test(thisChar)) {
+            if (thisChar === '/') {
+              closeTag();
+            }
+            else {
+              startProperty(thisChar);
+            }
           }
         }
         break;
-
       case 'property':
+        if (!finished) {
+        }
+        else {
+        }
         break;
-
       case 'value':
+        if (!finished) {
+        }
+        else {
+        }
         break;
-
       case 'text':
+        if (!finished) {
+        }
+        else {
+        }
         break;
     }
   }
