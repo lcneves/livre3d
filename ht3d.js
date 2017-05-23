@@ -2,145 +2,94 @@
  * ht3d.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Utility tools for importing HT3D documents into the Livre3D engine.
+ * Exports a function that parses an HT3D string and returns a Livre3D object.
  * Part of the Livre project.
  */
 
-'use strict';
-
 const Object3D = require('./object3d.js');
 
+function parse(html) {
 
-function parse(ht3d) {
-  // Reading can be: beginning, tag name, property, value, text
-  var reading = 'beginning';
-  var finished = false;
-  var currentObject = null;
-  var currentTag = '';
-  var currentProp = '';
-  var propValue 
-  var text = '';
+  var array = html.split('>');
+  for (let index = 0; index < array.length; index++) {
+    while (array[index].indexOf('<') > 0) {
+      var text = array[index].substring(0, array[index].indexOf('<')).trim();
+      var newTag = array[index].substring(array[index].indexOf('<')).trim();
+      array[index] = newTag;
+      if (text) { array.splice(index, 0, text); }
+    }
 
-  // Builder
-  function openTag() {
-    reading = "tag name";
-    currentTag = '';
-    finished = false;
+    array[index] = array[index].trim();
   }
-  function writeTag(thisChar) {
-    currentTag += thisChar;
+
+  function getTagName(line) {
+    var re = /^<(\w+)/gi;
+    var results = re.exec(line);
+    return results[1];
   }
-  function endTag() {
-    if (currentTag) {
-      let object = new Object3D();
-      object._tag = currentTag;
+
+  function getProps(line) {
+    var re = /([\w-]+)="([\w\s-]+)"/gi;
+    var results = [];
+    var prop;
+    while ((prop = re.exec(line)) !== null) {
+      results.push({ name: prop[1], value: prop[2] });
+    }
+    return results;
+  }
+
+  function checkSelfClose(line) {
+    return (line.charAt(line.length - 1) === '/');
+  }
+
+  function closeTag() {
+    if (currentObject && currentObject.parent) {
+      currentObject = currentObject.parent;
+    }
+  }
+
+  function parseTagLine(line) {
+    var tagName = getTagName(line);
+    var props = getProps(line);
+
+    if (tagName) {
+      var object = new Object3D();
+      object._tag = tagName;
+
+      for (let prop of props) {
+        object['_' + prop.name] = prop.value;
+      }
 
       if (currentObject) {
         currentObject.add(object);
       }
       currentObject = object;
     }
-    finished = true;
-    currentTag = '';
-  }
-  function closeTag() {
-    if (currentObject && currentObject.parent) {
-      currentObject = currentObject.parent;
-    }
-  }
-  function startProp(thisChar) {
-    reading = 'property';
-    finished = false;
-    currentProp = thisChar;
-  }
-  function writeProp(thisChar) {
-    currentProp += thisChar;
-  }
-  function endProp() {
-    finished = true;
-  }
-  function startValue() {
-    finished = false'
-    reading = 'value';
-    propValue = '';
-  }
-  function writeValue(thisChar) {
-    propValue += thisChar;
-  }
-  function endValue() {
-    finished = true;
-    currentObject['_' + currentProp] = propValue;
-  }
-  function startText(thisChar) {
-    finished = false;
-    reading = 'text';
-    text = thisChar;
-  }
-  function writeText(thisChar) {
-    text += thisChar;
-  }
-  function endText() {
-    finished = true;
-    if (currentObject) {
-      currentObject._text = text;
+
+    if (checkSelfClose(line)) {
+      closeTag();
     }
   }
 
-  // Director
-  for (let i = 0; i < ht3d.length; i++) {
-    let thisChar = ht3d.charAt(i);
-
-    switch (reading) {
-      case 'beginning':
-        if (thisChar === '<') {
-          openTag();
-        }
-        break;
-      case 'tag name':
-        if (!finished) {
-          if (!/\s/.test(thisChar)) {
-            if (thisChar === '>') {
-              endTag();
-            }
-            else {
-              writeTag(thisChar);
-            }
-          }
-          else if (currentTag) {
-            closeTag();
-          }
-        }
-        else {
-          if (!/\s/.test(thisChar)) {
-            if (thisChar === '/') {
-              closeTag();
-            }
-            else {
-              startProperty(thisChar);
-            }
-          }
-        }
-        break;
-      case 'property':
-        if (!finished) {
-        }
-        else {
-        }
-        break;
-      case 'value':
-        if (!finished) {
-        }
-        else {
-        }
-        break;
-      case 'text':
-        if (!finished) {
-        }
-        else {
-        }
-        break;
+  var currentObject = null;
+  for (let line of array) {
+    if (line.charAt(0) === '<') {
+      if (line.charAt(1) === '/') {
+        closeTag();
+      }
+      else {
+        parseTagLine(line);
+      }
+    }
+    else if (currentObject) {
+      currentObject._text = line;
     }
   }
+
+  return currentObject;
 }
 
+module.exports = {
+  parse: parse
+};
 

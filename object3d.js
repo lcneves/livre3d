@@ -115,7 +115,10 @@ function parseRelativePosition(position) {
       let axis = position[prop];
       let indexSemicolon = axis.indexOf(':');
       if (indexSemicolon !== -1) {
-        relative = // TODO: continue when sober.
+        // relative = // TODO: continue when sober.
+      }
+    }
+  }
 }
 
 class Object3D extends THREE.Object3D {
