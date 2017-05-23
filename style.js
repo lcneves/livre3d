@@ -15,9 +15,7 @@ module.exports = function(options) {
   // From https://mathiasbynens.be/notes/xhr-responsetype-json
   function getJSON(url) {
     return new Promise((resolve, reject) => {
-      var xhr = typeof XMLHttpRequest != 'undefined'
-        ? new XMLHttpRequest()
-        : new ActiveXObject('Microsoft.XMLHTTP');
+      var xhr = new XMLHttpRequest();
       xhr.open('get', url, true);
       xhr.onreadystatechange = function() {
         var status;
@@ -38,24 +36,32 @@ module.exports = function(options) {
     });
   }
 
-  function load(source, destination) {
-    for (let category in source) {
-      if (source.hasOwnProperty(category)) {
-        if (!destination.hasOwnProperty(category)) {
-          destination[category] = {};
-        }
-        for (let item in source[category]) {
-          destination[category][item] = source[category][item];
-          destination[category][item].dataPromise = new Promise(resolve => {
-            getJSON(config.publicPath + destination[category][item].src)
-              .then(data => resolve(data));
-          });
+  // Loads JSON assets (fonts, 3D objects) with XHR and creates dataPromise
+  // properties with the asset promise in the returned object.
+  function loadResources(styleArray) {
+    var results = {};
+    for (let source of styleArray) {
+      for (let category in source) {
+        if (source.hasOwnProperty(category)) {
+          if (!results.hasOwnProperty(category)) {
+            results[category] = {};
+          }
+          for (let item in source[category]) {
+            results[category][item] = source[category][item];
+            results[category][item].dataPromise = new Promise(resolve => {
+              getJSON(config.publicPath + results[category][item].src)
+                .then(data => resolve(data));
+            });
+          }
         }
       }
     }
+    return results;
   }
 
-  function make(object, styleArray) {
+  // Iterates the array of stylesheets and apply relevant styles to the object.
+  // Assigns results to object._style.
+  function make(styleArray, object) {
     var results = {};
 
     function copyProps(selector) {
@@ -100,11 +106,11 @@ module.exports = function(options) {
     copy('classes', '_class', checkIndex);
     copy('ids', '_id', checkEqual);
 
-    return results;
+    object._style = results;
   }
 
   return {
-    load: load,
+    loadResources: loadResources,
     make: make
   };
 };

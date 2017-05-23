@@ -33,7 +33,8 @@ function parse(html) {
     var results = [];
     var prop;
     while ((prop = re.exec(line)) !== null) {
-      results.push({ name: prop[1], value: prop[2] });
+      let value = prop[1] === 'class' ? prop[2].split(' ') : prop[2];
+      results.push({ name: prop[1], value: value });
     }
     return results;
   }
