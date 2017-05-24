@@ -22,7 +22,7 @@ module.exports = function (options) {
   const far =
     theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
   const dimensions = {
-    width: theme.worldWidth,
+    width: theme.worldWidth ? theme.worldWidth : 100,
     far: far,
     near: far * theme.nearFarRatio
   };
@@ -93,8 +93,7 @@ module.exports = function (options) {
       scene.add(newLight);
     }
 
-    // Continue here
-    body = new theme.Body(window.innerWidth / window.innerHeight);
+    body = new Body(window.innerWidth / window.innerHeight, dimensions);
 
     scene.add(lights);
     scene.add(body);
@@ -104,12 +103,37 @@ module.exports = function (options) {
 
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
+
+  function makeText(text, color, position) {
+    return new Promise(resolve => {
+      fontLoader.load(GET_PATH + '/fonts/gentilis_regular.typeface.json',
+        (font) => {
+          var geometry = new THREE.TextGeometry(text, {
+            font: font,
+          size: 4,
+          height: 3,
+          curveSegments: 12
+          });
+          var material = new THREE.MeshPhongMaterial( { color: color } );
+          var mesh = new THREE.Mesh( geometry, material );
+          var object = new livre3d.ObjectLivre(mesh);
+          for (let axis in position) {
+            if (position.hasOwnProperty(axis)) {
+              object.relativePosition[axis] = position[axis];
+            }
+          }
+
+          resolve(object);
+        }
+        );
+    });
+  }
+
   var makeShell = function makeShell() {
     // TODO: config based on options
 
     resetScene();
 
-    makeTestCorners();
 
 //    makeHeader();
 
@@ -122,16 +146,6 @@ module.exports = function (options) {
     theme.makeLogo()
       .then(logo => body.addRelative(logo));
   }
-
-  function makeTestCorners() {
-    theme.makeCornersArray.forEach(func => {
-      func().then(corner => body.addRelative(corner));
-    });
-  }
-
-  // Test screen with a theme-generated grid.
-  // TODO: Development only!
-  theme.makeGrid().then(grid => body.addRelative(grid));
 
   return {
     makeShell: makeShell
