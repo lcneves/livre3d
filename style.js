@@ -20,8 +20,6 @@ module.exports = function(options) {
       xhr.onreadystatechange = function() {
         var status;
         var data;
-        // 
-        https://xhr.spec.whatwg.org/#dom-xmlhttprequest-readystate
         if (xhr.readyState === 4) { // `DONE`
           status = xhr.status;
           if (status === 200) {
@@ -93,8 +91,8 @@ module.exports = function(options) {
         if (style[origProp]) {
           for (let selector in style[origProp]) {
             if (style[origProp].hasOwnProperty(selector) &&
-              check(object[destProp], selector)) {
-                copyProps(style[origProp][selector]);
+                check(object[destProp], selector)) {
+              copyProps(style[origProp][selector]);
             }
           }
         }

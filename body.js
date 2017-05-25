@@ -24,7 +24,7 @@ class Body extends Object3D {
     this._aspect = value;
 
     this.traverse(object => {
-      if (object instanceof livre3d.ObjectLivre && object !== this) {
+      if (object instanceof Object3D && object !== this) {
         object.setWorldPosition();
       }
     });

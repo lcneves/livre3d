@@ -155,9 +155,10 @@ class Object3D extends THREE.Object3D {
     }
   }
 
-  addRelative(object) {
+  // Overrides THREE.Object3D's add function
+  add(object) {
     object.setWorldPosition(this);
-    this.add(object);
+    THREE.Object3D.prototype.add.call(this, object);
   }
 }
 

@@ -76,7 +76,7 @@ module.exports = function (options) {
 
     for (let light of theme.lights) {
       let newLight;
-      switch light.type {
+      switch (light.type) {
         case 'ambient':
           newLight = new THREE.AmbientLight(
             light.color ? light.color : 0xffffff
@@ -110,13 +110,13 @@ module.exports = function (options) {
         (font) => {
           var geometry = new THREE.TextGeometry(text, {
             font: font,
-          size: 4,
-          height: 3,
-          curveSegments: 12
+            size: 4,
+            height: 3,
+            curveSegments: 12
           });
           var material = new THREE.MeshPhongMaterial( { color: color } );
           var mesh = new THREE.Mesh( geometry, material );
-          var object = new livre3d.ObjectLivre(mesh);
+          var object = new Object3D(mesh);
           for (let axis in position) {
             if (position.hasOwnProperty(axis)) {
               object.relativePosition[axis] = position[axis];
@@ -133,19 +133,8 @@ module.exports = function (options) {
     // TODO: config based on options
 
     resetScene();
-
-
-//    makeHeader();
-
+    theme.make('shell').then(shell => body.add(shell));
   };
-
-  function makeHeader() {
-    theme.makeMenu()
-      .then(menu => body.addRelative(menu)); // TODO: catch
-
-    theme.makeLogo()
-      .then(logo => body.addRelative(logo));
-  }
 
   return {
     makeShell: makeShell
