@@ -10,7 +10,7 @@
 
 module.exports = function(options) {
   var config = options ? options : {};
-  config.publicPath = config.publicPath | '/public';
+  config.publicPath = config.publicPath ? config.publicPath : '/public';
 
   // From https://mathiasbynens.be/notes/xhr-responsetype-json
   function getJSON(url) {
@@ -39,17 +39,19 @@ module.exports = function(options) {
   function loadResources(styleArray) {
     var results = {};
     for (let source of styleArray) {
-      for (let category in source) {
-        if (source.hasOwnProperty(category)) {
-          if (!results.hasOwnProperty(category)) {
-            results[category] = {};
-          }
-          for (let item in source[category]) {
-            results[category][item] = source[category][item];
-            results[category][item].dataPromise = new Promise(resolve => {
-              getJSON(config.publicPath + results[category][item].src)
-                .then(data => resolve(data));
-            });
+      if (source.resources) {
+        for (let category in source.resources) {
+          if (source.resources.hasOwnProperty(category)) {
+            if (!results.hasOwnProperty(category)) {
+              results[category] = {};
+            }
+            for (let item in source.resources[category]) {
+              results[category][item] = source.resources[category][item];
+              results[category][item].dataPromise = new Promise(resolve => {
+                getJSON(config.publicPath + results[category][item].src)
+                  .then(data => resolve(data));
+              });
+            }
           }
         }
       }

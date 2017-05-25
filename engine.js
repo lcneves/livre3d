@@ -10,7 +10,7 @@
 module.exports = function (options) {
   
   const ht3d = require('./ht3d.js'),
-        style = require('./style.js'),
+        style = require('./style.js')(),
         Object3D = require('./object3d.js'),
         Body = require('./body.js'),
         Camera = require('./camera.js');
@@ -90,12 +90,12 @@ module.exports = function (options) {
           });
           break;
       }
-      scene.add(newLight);
+      if (newLight) {
+        scene.add(newLight);
+      }
     }
 
     body = new Body(window.innerWidth / window.innerHeight, dimensions);
-
-    scene.add(lights);
     scene.add(body);
 
     render();
@@ -104,6 +104,7 @@ module.exports = function (options) {
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
 
+  /*
   function makeText(text, color, position) {
     return new Promise(resolve => {
       fontLoader.load(GET_PATH + '/fonts/gentilis_regular.typeface.json',
@@ -128,12 +129,25 @@ module.exports = function (options) {
         );
     });
   }
+  */
+
+  function makeStyles(object) {
+    for (let child of object.children) {
+      makeStyles(child);
+    }
+    style.make(theme.stylesheets, object);
+  }
+
+  function importTemplate(template, parent) {
+    var hypertext = theme.templates[template]();
+    var object = ht3d.parse(hypertext);
+    makeStyles(object);
+    body.add(object);
+  }
 
   var makeShell = function makeShell() {
-    // TODO: config based on options
-
     resetScene();
-    theme.make('shell').then(shell => body.add(shell));
+    importTemplate('shell', body);
   };
 
   return {
