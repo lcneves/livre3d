@@ -30,14 +30,16 @@ function getBoundaries(object) {
     };
   }
   else {
+    var position = new THREE.Vector3();
+    position.setFromMatrixPosition(object.matrixWorld);
     const bbox = new THREE.Box3().setFromObject(object);
     return {
-      left: object.position.x - bbox.min.x,
-      right: bbox.max.x - object.position.x,
-      top: bbox.max.y - object.position.y,
-      bottom: object.position.y - bbox.min.y,
-      far: object.position.z - bbox.min.z,
-      near: bbox.max.z - object.position.z
+      left: position.x - bbox.min.x,
+      right: bbox.max.x - position.x,
+      top: bbox.max.y - position.y,
+      bottom: position.y - bbox.min.y,
+      far: position.z - bbox.min.z,
+      near: bbox.max.z - position.z
     };
   }
 }
@@ -84,43 +86,37 @@ function makeInitialPosition() {
  * Returns the world position that the child should have
  * given its relative position to the parent.
  */
-
 function makeWorldPosition(childObject, parentObject, offset) {
   const parentBoundaries = parentObject.boundaries;
+  const parentDimensions = parentObject.dimensions;
   const childBoundaries = childObject._isLivreObject ?
-    childObject.boundaries : getBoundaries(childObject);
+    null : getBoundaries(childObject);
 
   var position = {};
 
   for (let axis of ['x', 'y', 'z']) {
-    let factor;
-    switch (offset.reference) {
+    position[axis] = offset[axis].distance;
+    if (!childObject._isLivreObject) {
+      position[axis] += childBoundaries[offset[axis].reference];
+    }
+    switch (offset[axis].reference) {
       case 'right':
       case 'top':
       case 'near':
-        factor = -1;
-        break;
+        position[axis] = - position[axis];
       default:
-        factor = 1;
         break;
     }
-
-    position[axis] =
-      parentObject.position[axis] + factor * (
-        offset[axis].distance +
-        childBoundaries[offset[axis].reference] -
-        parentBoundaries[offset[axis].reference]
-      );
   }
-
   return position;
 }
 
 function positionChildren(parentObject) {
   var offset = makeInitialPosition();
-  for (let child of parentObject.children) {
+  for (let i = 0; i < parentObject.children.length; i++) {
+    let child = parentObject.children[i];
     let position = makeWorldPosition(child, parentObject, offset);
-    for (let axis in ['x', 'y', 'z']) {
+    for (let axis of ['x', 'y', 'z']) {
       child.position[axis] = position[axis];
     }
     if (child._isLivreObject) {

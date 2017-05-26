@@ -26,7 +26,7 @@ class Camera extends THREE.PerspectiveCamera {
     );
 
     this.position.x = dimensions.width / 2;
-    this.position.y = dimensions.width / 2 / aspectRatio;
+    this.position.y = - dimensions.width / 2 / aspectRatio;
     this.position.z = dimensions.far;
     this._dimensions = dimensions;
     this._hfov = hfov;
@@ -35,7 +35,7 @@ class Camera extends THREE.PerspectiveCamera {
   set aspectRatio(value) {
     this.aspect = value;
     this.fov = getVerticalFOV(this._hfov, value);
-    this.position.y = this._dimensions.width / 2 / value;
+    this.position.y = - this._dimensions.width / 2 / value;
     this.updateProjectionMatrix();
   }
 }

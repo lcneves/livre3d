@@ -13,8 +13,8 @@ class Body extends Object3D {
     return {
       left: 0,
       right: this._dimensions.width,
-      top: this._dimensions.width / this._aspect,
-      bottom: 0,
+      top: 0,
+      bottom: this._dimensions.width / this._aspect,
       far: 0,
       near: this._dimensions.far - this._dimensions.near
     };
@@ -30,12 +30,7 @@ class Body extends Object3D {
 
   set aspectRatio(value) {
     this._aspect = value;
-
-    this.traverse(object => {
-      if (object instanceof Object3D && object !== this) {
-        object.setWorldPosition();
-      }
-    });
+    this.arrangeChildren();
   }
 }
 

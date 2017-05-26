@@ -151,7 +151,15 @@ module.exports = function (options) {
   var makeShell = function makeShell() {
     resetScene();
     importTemplate('shell', body);
-    setTimeout(() => { console.log(body); }, 1500);
+    setTimeout(() => {
+      console.dir({
+        bodyPosition: body.position,
+        childPosition: body.children[0].position,
+        grandChild0Pos: body.children[0].children[0].position,
+        grandChild1Pos: body.children[0].children[1].position,
+        body: body
+      });
+    }, 1500);
   };
 
   return {
