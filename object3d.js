@@ -33,7 +33,10 @@ function getBoundaries(object) {
  * Gives the object's world dimensions in a boundary box.
  */
 function getDimensions(object) {
+  console.dir(object);
+    
   const bbox = new THREE.Box3().setFromObject(object);
+
   return {
     x: bbox.max.x - bbox.min.x,
     y: bbox.max.y - bbox.min.y,
@@ -67,6 +70,9 @@ function makeInitialPosition(axis) {
  * given its relative position to the parent.
  */
 function makeWorldPosition(childObject, parentObject) {
+  // Continue below this line
+  return { x: 0, y: 0, z: 0 };
+
   const parentBoundaries = parentObject.boundaries;
   const childBoundaries = childObject.boundaries;
 
@@ -94,36 +100,14 @@ function makeWorldPosition(childObject, parentObject) {
       );
   }
 
-  console.dir({
-    parentBoundaries: parentBoundaries,
-    childBoundaries: childBoundaries,
-    parentPosition: parentObject.position,
-    childPosition: position,
-    childRelativePosition: childObject.relativePosition
-  });
-
   return position;
-}
-
-function parseRelativePosition(position) {
-  var parsedPosition;
-
-  for (let prop in position) {
-    if (position.hasOwnProperty(prop)) {
-      let relative;
-      let distance;
-      let axis = position[prop];
-      let indexSemicolon = axis.indexOf(':');
-      if (indexSemicolon !== -1) {
-        // relative = // TODO: continue when sober.
-      }
-    }
-  }
 }
 
 class Object3D extends THREE.Object3D {
   constructor(mesh) {
     super();
+
+    this._isLivreObject = true;
 
     if (mesh) {
       this.add(mesh);
@@ -157,7 +141,9 @@ class Object3D extends THREE.Object3D {
 
   // Overrides THREE.Object3D's add function
   add(object) {
-    object.setWorldPosition(this);
+    if(object._isLivreObject) {
+      object.setWorldPosition(this);
+    }
     THREE.Object3D.prototype.add.call(this, object);
   }
 }

@@ -104,50 +104,54 @@ module.exports = function (options) {
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
 
-  /*
-  function makeText(text, color, position) {
-    return new Promise(resolve => {
-      fontLoader.load(GET_PATH + '/fonts/gentilis_regular.typeface.json',
-        (font) => {
-          var geometry = new THREE.TextGeometry(text, {
-            font: font,
-            size: 4,
-            height: 3,
-            curveSegments: 12
-          });
-          var material = new THREE.MeshPhongMaterial( { color: color } );
-          var mesh = new THREE.Mesh( geometry, material );
-          var object = new Object3D(mesh);
-          for (let axis in position) {
-            if (position.hasOwnProperty(axis)) {
-              object.relativePosition[axis] = position[axis];
-            }
-          }
+  function makeText(object) {
+    var fontPromise = resources.fonts[
+      object._style['font-family'] + '-' + object._style['font-weight']
+    ].dataPromise;
 
-          resolve(object);
-        }
+    return new Promise(resolve => {
+      fontPromise.then(font => {
+        console.dir(font);
+        var geometry = new THREE.TextGeometry(object._text, {
+          font: font,
+          size: object._style['font-size'],
+          height: (object._style['font-size'] * 0.1),
+          curveSegments: 12
+        });
+        var material = new THREE.MeshPhongMaterial(
+          { color: object._style['color'] }
         );
+        var mesh = new THREE.Mesh(geometry, material);
+        var newObject = new Object3D(mesh);
+
+        resolve(newObject);
+      });
     });
   }
-  */
 
-  function makeStyles(object) {
+  function makeStylesAndText(object) {
     for (let child of object.children) {
-      makeStyles(child);
+      makeStylesAndText(child);
     }
+
     style.make(theme.stylesheets, object);
+
+    if (object._text) {
+      makeText(object).then(text => object.add(text));
+    }
   }
 
   function importTemplate(template, parent) {
     var hypertext = theme.templates[template]();
     var object = ht3d.parse(hypertext);
-    makeStyles(object);
+    makeStylesAndText(object);
     body.add(object);
   }
 
   var makeShell = function makeShell() {
     resetScene();
     importTemplate('shell', body);
+    setTimeout(() => { console.log(body); }, 1500);
   };
 
   return {

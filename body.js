@@ -20,6 +20,14 @@ class Body extends Object3D {
     };
   }
 
+  get dimensions() {
+    return {
+      x: this._dimensions.width,
+      y: this._dimensions.width / this._aspect,
+      z: this._dimensions.far - this._dimensions.near
+    };
+  }
+
   set aspectRatio(value) {
     this._aspect = value;
 

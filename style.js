@@ -8,6 +8,10 @@
 
 'use strict';
 
+const THREE = require('three');
+
+const fontLoader = new THREE.FontLoader();
+
 module.exports = function(options) {
   var config = options ? options : {};
   config.publicPath = config.publicPath ? config.publicPath : '/public';
@@ -49,7 +53,12 @@ module.exports = function(options) {
               results[category][item] = source.resources[category][item];
               results[category][item].dataPromise = new Promise(resolve => {
                 getJSON(config.publicPath + results[category][item].src)
-                  .then(data => resolve(data));
+                  .then(data => {
+                    if (category === 'fonts') {
+                      data = fontLoader.parse(data);
+                    }
+                    resolve(data)
+                  });
               });
             }
           }
