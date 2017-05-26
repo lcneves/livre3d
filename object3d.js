@@ -33,15 +33,30 @@ function getBoundaries(object) {
  * Gives the object's world dimensions in a boundary box.
  */
 function getDimensions(object) {
-  console.dir(object);
-    
-  const bbox = new THREE.Box3().setFromObject(object);
+  if (object.children && object.children[0]._isLivreObject) {
+    var virtualBox = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+    for (let child of object.children) {
+      let dimensions = getDimensions(child);
+      virtualBox.x = Math.max(virtualBox.x, dimensions.x);
+      virtualBox.y += dimensions.y;
+      virtualBox.z = Math.max(virtualBox.z, dimensions.z);
+    }
+    return virtualBox;
+  }
 
-  return {
-    x: bbox.max.x - bbox.min.x,
-    y: bbox.max.y - bbox.min.y,
-    z: bbox.max.z - bbox.min.z
-  };
+  else {
+    const bbox = new THREE.Box3().setFromObject(object);
+
+    return {
+      x: bbox.max.x - bbox.min.x,
+      y: bbox.max.y - bbox.min.y,
+      z: bbox.max.z - bbox.min.z
+    };
+  }
 }
 
 
@@ -69,6 +84,9 @@ function makeInitialPosition(axis) {
  * Returns the world position that the child should have
  * given its relative position to the parent.
  */
+
+/*
+ * Will consider for absolute positioning
 function makeWorldPosition(childObject, parentObject) {
   // Continue below this line
   return { x: 0, y: 0, z: 0 };
@@ -101,6 +119,10 @@ function makeWorldPosition(childObject, parentObject) {
   }
 
   return position;
+}
+*/
+
+function makeWorldPosition(childObject, parentObject) {
 }
 
 class Object3D extends THREE.Object3D {
