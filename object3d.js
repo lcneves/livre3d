@@ -18,22 +18,35 @@ const THREE = require('three');
  * - the z axis grows to the near.
  */
 function getBoundaries(object) {
-  const bbox = new THREE.Box3().setFromObject(object);
-  return {
-    left: object.position.x - bbox.min.x,
-    right: bbox.max.x - object.position.x,
-    top: bbox.max.y - object.position.y,
-    bottom: object.position.y - bbox.min.y,
-    far: object.position.z - bbox.min.z,
-    near: bbox.max.z - object.position.z
-  };
+  if (object._isLivreObject) {
+    var dimensions = object.dimensions;
+    return {
+      left: 0,
+      right: dimensions.x,
+      top: dimensions.y,
+      bottom: 0,
+      far: 0,
+      near: dimensions.z
+    };
+  }
+  else {
+    const bbox = new THREE.Box3().setFromObject(object);
+    return {
+      left: object.position.x - bbox.min.x,
+      right: bbox.max.x - object.position.x,
+      top: bbox.max.y - object.position.y,
+      bottom: object.position.y - bbox.min.y,
+      far: object.position.z - bbox.min.z,
+      near: bbox.max.z - object.position.z
+    };
+  }
 }
 
 /*
  * Gives the object's world dimensions in a boundary box.
  */
 function getDimensions(object) {
-  if (object.children && object.children[0]._isLivreObject) {
+  if (object._isLivreObject) {
     var virtualBox = {
       x: 0,
       y: 0,
@@ -50,7 +63,6 @@ function getDimensions(object) {
 
   else {
     const bbox = new THREE.Box3().setFromObject(object);
-
     return {
       x: bbox.max.x - bbox.min.x,
       y: bbox.max.y - bbox.min.y,
@@ -60,24 +72,12 @@ function getDimensions(object) {
 }
 
 
-function makeInitialPosition(axis) {
-  var position = {
-    reference: undefined,
-    distance: 0
+function makeInitialPosition() {
+  return {
+    x: { reference: 'left', distance: 0 },
+    y: { reference: 'top', distance: 0 },
+    z: { reference: 'far', distance: 0 }
   };
-  switch (axis) {
-    case 'x':
-      position.reference = 'left';
-      break;
-    case 'y':
-      position.reference = 'top';
-      break;
-    case 'z':
-      position.reference = 'far';
-      break;
-  }
-
-  return position;
 }
 
 /*
@@ -85,21 +85,16 @@ function makeInitialPosition(axis) {
  * given its relative position to the parent.
  */
 
-/*
- * Will consider for absolute positioning
-function makeWorldPosition(childObject, parentObject) {
-  // Continue below this line
-  return { x: 0, y: 0, z: 0 };
-
+function makeWorldPosition(childObject, parentObject, offset) {
   const parentBoundaries = parentObject.boundaries;
-  const childBoundaries = childObject.boundaries;
+  const childBoundaries = childObject._isLivreObject ?
+    childObject.boundaries : getBoundaries(childObject);
 
   var position = {};
 
   for (let axis of ['x', 'y', 'z']) {
-    let reference = childObject.relativePosition[axis].reference;
     let factor;
-    switch (reference) {
+    switch (offset.reference) {
       case 'right':
       case 'top':
       case 'near':
@@ -112,17 +107,27 @@ function makeWorldPosition(childObject, parentObject) {
 
     position[axis] =
       parentObject.position[axis] + factor * (
-        childObject.relativePosition[axis].distance +
-        childBoundaries[reference] -
-        parentBoundaries[reference]
+        offset[axis].distance +
+        childBoundaries[offset[axis].reference] -
+        parentBoundaries[offset[axis].reference]
       );
   }
 
   return position;
 }
-*/
 
-function makeWorldPosition(childObject, parentObject) {
+function positionChildren(parentObject) {
+  var offset = makeInitialPosition();
+  for (let child of parentObject.children) {
+    let position = makeWorldPosition(child, parentObject, offset);
+    for (let axis in ['x', 'y', 'z']) {
+      child.position[axis] = position[axis];
+    }
+    if (child._isLivreObject) {
+      positionChildren(child);
+    }
+    offset.y.distance += getDimensions(child).y;
+  }
 }
 
 class Object3D extends THREE.Object3D {
@@ -134,12 +139,6 @@ class Object3D extends THREE.Object3D {
     if (mesh) {
       this.add(mesh);
     }
-
-    this.relativePosition = {
-      x: makeInitialPosition('x'),
-      y: makeInitialPosition('y'),
-      z: makeInitialPosition('z')
-    };
   }
 
   get dimensions() {
@@ -150,10 +149,15 @@ class Object3D extends THREE.Object3D {
     return getBoundaries(this);
   }
 
-  setWorldPosition(parentObject) {
-    parentObject = parentObject || this.parent;
+  arrangeChildren() {
+    positionChildren(this);
+  }
 
-    var position = makeWorldPosition(this, parentObject);
+  setWorldPosition(parentObject, offset) {
+    parentObject = parentObject || this.parent;
+    offset = offset || makeInitialPosition();
+
+    var position = makeWorldPosition(this, parentObject, offset);
     for (let prop in position) {
       if (position.hasOwnProperty(prop)) {
         this.position[prop] = position[prop];
@@ -163,10 +167,13 @@ class Object3D extends THREE.Object3D {
 
   // Overrides THREE.Object3D's add function
   add(object) {
-    if(object._isLivreObject) {
-      object.setWorldPosition(this);
-    }
     THREE.Object3D.prototype.add.call(this, object);
+
+    var topObject = this;
+    while (topObject.parent && topObject.parent._isLivreObject) {
+      topObject = topObject.parent;
+    }
+    topObject.arrangeChildren();
   }
 }
 
