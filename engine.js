@@ -11,13 +11,15 @@ module.exports = function (options) {
   
   const ht3d = require('./ht3d.js'),
         style = require('./style.js')(),
-        Object3D = require('./object3d.js'),
         Body = require('./body.js'),
         Camera = require('./camera.js');
 
   const THREE = require('three');
 
-  const theme = options.theme;
+  var theme = options.theme;
+  theme.resources = style.loadResources(theme.stylesheets);
+
+  const Object3D = require('./object3d.js')(theme);
 
   const far =
     theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -27,7 +29,6 @@ module.exports = function (options) {
     near: far * theme.nearFarRatio
   };
 
-  var resources = style.loadResources(theme.stylesheets);
 
   var scene,
       body,
@@ -103,49 +104,8 @@ module.exports = function (options) {
 
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
-
-  function makeText(object) {
-    var fontPromise = resources.fonts[
-      object._style['font-family'] + '-' + object._style['font-weight']
-    ].dataPromise;
-
-    return new Promise(resolve => {
-      fontPromise.then(font => {
-        console.dir(font);
-        var geometry = new THREE.TextGeometry(object._text, {
-          font: font,
-          size: object._style['font-size'],
-          height: (object._style['font-size'] * 0.1),
-          curveSegments: 12
-        });
-        var material = new THREE.MeshPhongMaterial(
-          { color: object._style['color'] }
-        );
-        var mesh = new THREE.Mesh(geometry, material);
-        var newObject = new Object3D(mesh);
-
-        resolve(newObject);
-      });
-    });
-  }
-
-  function makeStylesAndText(object) {
-    for (let child of object.children) {
-      makeStylesAndText(child);
-    }
-
-    style.make(theme.stylesheets, object);
-
-    if (object._text) {
-      makeText(object).then(text => object.add(text));
-    }
-  }
-
-  function importTemplate(template, parent) {
-    var hypertext = theme.templates[template]();
-    var object = ht3d.parse(hypertext);
-    makeStylesAndText(object);
-    body.add(object);
+  function importTemplate(template, parentObject) {
+    parentObject.add(new Object3D({ template: template }), { rearrange: true });
   }
 
   var makeShell = function makeShell() {

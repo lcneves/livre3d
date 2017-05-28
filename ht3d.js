@@ -44,8 +44,12 @@ function parse(html) {
   }
 
   function closeTag() {
-    if (currentObject && currentObject.parent) {
-      currentObject = currentObject.parent;
+    if (currentObject) {
+      currentObject.makeStyle();
+
+      if (currentObject.parent) {
+        currentObject = currentObject.parent;
+      }
     }
   }
 
@@ -55,10 +59,10 @@ function parse(html) {
 
     if (tagName) {
       var object = new Object3D();
-      object._tag = tagName;
+      object.setProperty('tag', tagName);
 
       for (let prop of props) {
-        object['_' + prop.name] = prop.value;
+        object.setProperty(prop.name, prop.value);
       }
 
       if (currentObject) {

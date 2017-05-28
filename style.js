@@ -57,7 +57,7 @@ module.exports = function(options) {
                     if (category === 'fonts') {
                       data = fontLoader.parse(data);
                     }
-                    resolve(data)
+                    resolve(data);
                   });
               });
             }
@@ -69,7 +69,6 @@ module.exports = function(options) {
   }
 
   // Iterates the array of stylesheets and apply relevant styles to the object.
-  // Assigns results to object._style.
   function make(styleArray, object) {
     var results = {};
 
@@ -102,7 +101,7 @@ module.exports = function(options) {
         if (style[origProp]) {
           for (let selector in style[origProp]) {
             if (style[origProp].hasOwnProperty(selector) &&
-                check(object[destProp], selector)) {
+                check(object.ht3d[destProp], selector)) {
               copyProps(style[origProp][selector]);
             }
           }
@@ -110,12 +109,13 @@ module.exports = function(options) {
       }
     }
 
-    copyDefaults();
-    copy('tags', '_tag', checkEqual);
-    copy('classes', '_class', checkIndex);
-    copy('ids', '_id', checkEqual);
-
-    object._style = results;
+    if (object._ht3d) {
+      copyDefaults();
+      copy('tags', 'tag', checkEqual);
+      copy('classes', 'class', checkIndex);
+      copy('ids', 'id', checkEqual);
+    }
+    return results;
   }
 
   return {
