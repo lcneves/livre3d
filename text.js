@@ -1,7 +1,6 @@
 'use strict';
 
 const THREE = require('three');
-const Object3D = require('./object3d.js');
 
 module.exports = function(fonts) {
 
@@ -22,9 +21,8 @@ module.exports = function(fonts) {
           { color: style['color'] }
         );
         var mesh = new THREE.Mesh(geometry, material);
-        var newObject = new Object3D({ mesh: mesh });
 
-        resolve(newObject);
+        resolve(mesh);
       });
     });
   }

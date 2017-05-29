@@ -9,17 +9,14 @@
 
 module.exports = function (options) {
   
-  const ht3d = require('./ht3d.js'),
-        style = require('./style.js')(),
-        Body = require('./body.js'),
-        Camera = require('./camera.js');
 
   const THREE = require('three');
 
   var theme = options.theme;
-  theme.resources = style.loadResources(theme.stylesheets);
 
   const Object3D = require('./object3d.js')(theme);
+  const Body = require('./body.js')(Object3D);
+  const Camera = require('./camera.js');
 
   const far =
     theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -29,17 +26,22 @@ module.exports = function (options) {
     near: far * theme.nearFarRatio
   };
 
-
   var scene,
-      body,
-      lights,
-      camera;
+      lights;
+
+  var camera = new Camera(
+    window.innerWidth / window.innerHeight,
+    theme.hfov,
+    dimensions
+  );
+
+  var body = new Body(window.innerWidth / window.innerHeight, dimensions);
 
   var renderer = new THREE.WebGLRenderer({
     antialias: true
   });
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
   // Resize canvas on window resize
   window.addEventListener('resize', function () {
@@ -59,8 +61,8 @@ module.exports = function (options) {
   require('./utils/click.js')(THREE, renderer, camera, body);
 
   function render() {
-    requestAnimationFrame( render );
-    renderer.render( scene, camera );
+    requestAnimationFrame(render);
+    renderer.render(scene, camera);
   }
 
   function resetScene() {
@@ -68,12 +70,6 @@ module.exports = function (options) {
     if (theme.background) {
       scene.background = new THREE.Color(theme.background);
     }
-
-    camera = new Camera(
-      window.innerWidth / window.innerHeight,
-      theme.hfov,
-      dimensions
-    );
 
     for (let light of theme.lights) {
       let newLight;

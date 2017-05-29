@@ -101,7 +101,7 @@ module.exports = function(options) {
         if (style[origProp]) {
           for (let selector in style[origProp]) {
             if (style[origProp].hasOwnProperty(selector) &&
-                check(object.ht3d[destProp], selector)) {
+                check(object._ht3d[destProp], selector)) {
               copyProps(style[origProp][selector]);
             }
           }

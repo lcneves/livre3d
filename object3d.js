@@ -8,12 +8,13 @@
 
 'use strict';
 
-module.exports = function (theme) {
+module.exports = function (theme, options) {
 
   const THREE = require('three');
 
   const ht3d = require('./ht3d.js');
-  const style = require('./style.js');
+  const style = require('./style.js')(options);
+  theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
 
   class Background extends THREE.PlaneGeometry {
@@ -173,18 +174,18 @@ module.exports = function (theme) {
 
   class Object3D extends THREE.Object3D {
     constructor(options) {
+      super();
+
       options = (options && typeof options === 'object') ? options : {};
 
       if (options.hypertext) {
-        return ht3d.parse(options.hypertext);
+        return ht3d.parse(options.hypertext, Object3D);
       }
 
       if (options.template) {
         const hypertext = theme.templates[options.template]();
-        return ht3d.parse(hypertext);
+        return ht3d.parse(hypertext, Object3D);
       }
-
-      super();
 
       if (options.mesh) {
         super.add(options.mesh);
@@ -223,17 +224,16 @@ module.exports = function (theme) {
     }
 
     setProperty(property, value) {
-      if (property && typeof property === 'string' &&
-        value && typeof value === 'string')
+      if (property && typeof property === 'string' && value)
       {
         this._ht3d = this._ht3d ? this._ht3d : {};
         this._ht3d[property] = value;
 
         switch (property) {
           case 'text':
-            this._style.then(style => {
+            this._stylePromise.then(style => {
               text.make(value, style).then(newText => {
-                this.add(newText);
+                this.add(newText, { rearrange: true });
               });
             });
             break;
@@ -247,7 +247,7 @@ module.exports = function (theme) {
     makeStyle() {
       const styleObject = style.make(theme.stylesheets, this);
       this._style = styleObject;
-      this.resolveStylePromise(styleObject);
+      this._resolveStylePromise(styleObject);
     }
 
     // Overrides THREE.Object3D's add function

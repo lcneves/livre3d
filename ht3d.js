@@ -6,9 +6,9 @@
  * Part of the Livre project.
  */
 
-const Object3D = require('./object3d.js');
+'use strict';
 
-function parse(html) {
+function parse(html, Object3D) {
 
   var array = html.split('>');
   for (let index = 0; index < array.length; index++) {
@@ -86,15 +86,13 @@ function parse(html) {
         parseTagLine(line);
       }
     }
-    else if (currentObject) {
-      currentObject._text = line;
+    else if (currentObject && line) {
+      currentObject.setProperty('text', line);
     }
   }
 
   return currentObject;
 }
 
-module.exports = {
-  parse: parse
-};
+module.exports.parse = parse;
 

@@ -15,23 +15,23 @@ module.exports = function (THREE, renderer, camera, body) {
   var raycaster = new THREE.Raycaster();
   var mouse = new THREE.Vector2();
 
-  document.addEventListener( 'click', onDocumentClick, false );
+  document.addEventListener('click', onDocumentClick, false);
 
   function onDocumentClick (event) {
     event.preventDefault();
 
-    mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
-    mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+    mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+    mouse.y = - (event.clientY / renderer.domElement.clientHeight) * 2 + 1;
 
-    raycaster.setFromCamera( mouse, camera );
+    raycaster.setFromCamera(mouse, camera);
 
     // true means recursive to children
     var intersects = raycaster.intersectObjects(body.children, true);
 
     // TODO: Handle cases that a clickable object is hidden behind a
     // non-clickable object
-    if ( intersects.length > 0 &&
-        typeof intersects[0].object.onClick === 'function' ) {
+    if (intersects.length > 0 &&
+        typeof intersects[0].object.onClick === 'function') {
       intersects[0].object.onClick();
     }
   }
