@@ -68,6 +68,19 @@ module.exports = function(options) {
     return results;
   }
 
+  function parseSpacers(property, value) {
+    var results = {};
+    var directions = ['top', 'bottom', 'left', 'right', 'far', 'near'];
+
+    if (typeof value === 'string') {
+      var values = value.split(' ');
+      switch (values.length) {
+        case 1:
+          for (let direction of directions) {
+            results[property + '-' + direction]
+
+  }
+
   // Iterates the array of stylesheets and apply relevant styles to the object.
   function make(styleArray, object) {
     var results = {};
