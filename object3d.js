@@ -44,6 +44,7 @@ module.exports = function (theme, options) {
 
   /*
    * Gives the object's world dimensions in a boundary box.
+   * By default, does not include margins; only paddings.
    */
   function getDimensions(object, options) {
     if (object._isLivreObject) {
