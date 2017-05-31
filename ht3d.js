@@ -45,7 +45,7 @@ function parse(html, Object3D) {
 
   function closeTag() {
     if (currentObject) {
-      currentObject.makeStyle();
+      currentObject.makeText();
 
       if (currentObject.parent) {
         currentObject = currentObject.parent;
@@ -64,6 +64,8 @@ function parse(html, Object3D) {
       for (let prop of props) {
         object.setProperty(prop.name, prop.value);
       }
+      
+      object.makeStyle();
 
       if (currentObject) {
         currentObject.add(object);

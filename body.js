@@ -6,6 +6,9 @@ module.exports = function(Object3D) {
       super();
       this._aspect = aspectRatio;
       this._dimensions = dimensions;
+
+      this._ht3d = { tag: 'body' };
+      this.makeStyle();
     }
 
     get boundaries() {

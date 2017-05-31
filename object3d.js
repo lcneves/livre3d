@@ -45,7 +45,7 @@ module.exports = function (theme, options) {
   /*
    * Gives the object's world dimensions in a boundary box.
    */
-  function getDimensions(object) {
+  function getDimensions(object, options) {
     if (object._isLivreObject) {
       var virtualBox = {
         x: 0,
@@ -54,12 +54,23 @@ module.exports = function (theme, options) {
       };
       for (let child of object.children) {
         if(!child._ignoreSize) {
-          let dimensions = getDimensions(child);
+          let dimensions = getDimensions(child, { includeMargin: true });
           virtualBox.x = Math.max(virtualBox.x, dimensions.x);
           virtualBox.y += dimensions.y;
           virtualBox.z = Math.max(virtualBox.z, dimensions.z);
         }
       }
+      var style = object._style;
+      virtualBox.x += style['padding-left'] + style['padding-right'];
+      virtualBox.y += style['padding-top'] + style['padding-bottom'];
+      virtualBox.z += style['padding-far'] + style['padding-near'];
+
+      if (options && options.includeMargin) {
+        virtualBox.x += style['margin-left'] + style['margin-right'];
+        virtualBox.y += style['margin-top'] + style['margin-bottom'];
+        virtualBox.z += style['margin-far'] + style['margin-near'];
+      }
+
       return virtualBox;
     }
 
@@ -70,6 +81,16 @@ module.exports = function (theme, options) {
         y: bbox.max.y - bbox.min.y,
         z: bbox.max.z - bbox.min.z
       };
+    }
+  }
+
+  function getSpacer(object, direction) {
+    if (object._isLivreObject) {
+      return object._style['margin-' + direction] +
+        object._style['padding-' + direction];
+    }
+    else {
+      return 0;
     }
   }
 
@@ -147,6 +168,10 @@ module.exports = function (theme, options) {
 
   function positionChildren(parentObject) {
     var offset = makeInitialPosition();
+    offset.x.distance += getSpacer(parentObject, 'left');
+    offset.y.distance += getSpacer(parentObject, 'top');
+    offset.z.distance += getSpacer(parentObject, 'far');
+
     for (let i = 0; i < parentObject.children.length; i++) {
       let child = parentObject.children[i];
       let position;
@@ -161,7 +186,7 @@ module.exports = function (theme, options) {
       }
       else {
         position = makeWorldPosition(child, parentObject, offset);
-        offset.y.distance += getDimensions(child).y;
+        offset.y.distance += getDimensions(child, { includeMargin: true }).y;
       }
       for (let axis of ['x', 'y', 'z']) {
         child.position[axis] = position[axis];
@@ -190,10 +215,6 @@ module.exports = function (theme, options) {
       if (options.mesh) {
         super.add(options.mesh);
       }
-
-      this._stylePromise = new Promise(resolve => {
-        this._resolveStylePromise = resolve;
-      });
 
       this._isLivreObject = true;
 
@@ -224,20 +245,9 @@ module.exports = function (theme, options) {
     }
 
     setProperty(property, value) {
-      if (property && typeof property === 'string' && value)
-      {
+      if (property && typeof property === 'string' && value) {
         this._ht3d = this._ht3d ? this._ht3d : {};
         this._ht3d[property] = value;
-
-        switch (property) {
-          case 'text':
-            this._stylePromise.then(style => {
-              text.make(value, style).then(newText => {
-                this.add(newText, { rearrange: true });
-              });
-            });
-            break;
-        }
       }
       else {
         throw new Error('Invalid inputs!');
@@ -245,9 +255,15 @@ module.exports = function (theme, options) {
     }
 
     makeStyle() {
-      const styleObject = style.make(theme.stylesheets, this);
-      this._style = styleObject;
-      this._resolveStylePromise(styleObject);
+      this._style = style.make(theme.stylesheets, this);
+    }
+
+    makeText() {
+      if (this._ht3d && this._ht3d.text) {
+        text.make(this._ht3d.text, this._style).then(newText => {
+          this.add(newText, { rearrange: true });
+        });
+      }
     }
 
     // Overrides THREE.Object3D's add function
