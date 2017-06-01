@@ -42,12 +42,29 @@ module.exports = function (theme, options) {
     }
   }
 
+  function getDirectionAxis(direction) {
+    var directionAxis;
+      switch (direction) {
+        case 'row':
+          directionAxis = 'x';
+          break;
+        case 'stack':
+          directionAxis = 'z';
+          break;
+        default:
+          directionAxis = 'y';
+          break;
+      }
+    return directionAxis;
+  }
+
   /*
    * Gives the object's world dimensions in a boundary box.
    * By default, does not include margins; only paddings.
    */
   function getDimensions(object, options) {
     if (object._isLivreObject) {
+      options = typeof options === 'object' && options !== null ? options : {};
       var virtualBox = {
         x: 0,
         y: 0,
@@ -56,9 +73,15 @@ module.exports = function (theme, options) {
       for (let child of object.children) {
         if(!child._ignoreSize) {
           let dimensions = getDimensions(child, { includeMargin: true });
-          virtualBox.x = Math.max(virtualBox.x, dimensions.x);
-          virtualBox.y += dimensions.y;
-          virtualBox.z = Math.max(virtualBox.z, dimensions.z);
+          for (let axis of ['x', 'y', 'z']) {
+            let directionAxis = getDirectionAxis(options.direction);
+            if (axis === directionAxis) {
+              virtualBox[axis] += dimensions[axis];
+            }
+            else {
+              virtualBox[axis] = Math.max(virtualBox[axis], dimensions[axis]);
+            }
+          }
         }
       }
       var style = object._style;
@@ -187,7 +210,9 @@ module.exports = function (theme, options) {
       }
       else {
         position = makeWorldPosition(child, parentObject, offset);
-        offset.y.distance += getDimensions(child, { includeMargin: true }).y;
+        let directionAxis = getDirectionAxis(parentObject._style['direction']);
+        offset[directionAxis].distance +=
+          getDimensions(child, { includeMargin: true })[directionAxis];
       }
       for (let axis of ['x', 'y', 'z']) {
         child.position[axis] = position[axis];

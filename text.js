@@ -14,7 +14,7 @@ module.exports = function(fonts) {
         var geometry = new THREE.TextGeometry(text, {
           font: font,
           size: style['font-size'],
-          height: (style['font-size'] * 0.2),
+          height: style['font-height'],
           curveSegments: 12
         });
         var material = new THREE.MeshPhongMaterial(
