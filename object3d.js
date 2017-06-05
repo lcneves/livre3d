@@ -223,6 +223,7 @@ module.exports = function (theme, options) {
     }
   }
 
+
   class Object3D extends THREE.Object3D {
     constructor(options) {
       super();
@@ -252,6 +253,19 @@ module.exports = function (theme, options) {
 
     get boundaries() {
       return getBoundaries(this);
+    }
+
+    getStyle(property) {
+      var currentObject = this;
+      do {
+        if (currentObject._style[property]) {
+          return currentObject._style[property];
+        }
+        currentObject = currentObject.parent;
+      }
+      while (currentObject.parent);
+
+      return undefined;
     }
 
     arrangeChildren() {
@@ -286,7 +300,13 @@ module.exports = function (theme, options) {
 
     makeText() {
       if (this._ht3d && this._ht3d.text) {
-        text.make(this._ht3d.text, this._style).then(newText => {
+        text.make(this._ht3d.text, {
+          'font-family': this.getStyle('font-family'),
+          'font-size': this.getStyle('font-size'),
+          'font-height': this.getStyle('font-height'),
+          'font-weight': this.getStyle('font-weight'),
+          'color': this.getStyle('color')
+        }).then(newText => {
           this.add(newText, { rearrange: true });
         });
       }
