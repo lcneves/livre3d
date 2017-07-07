@@ -12,6 +12,18 @@ const objectHash = require('object-hash');
 
 var cache = {};
 
+function makeGeometry(word, style) {
+  var charArray = word.split('');
+  var offset = 0;
+  var geometry = fontCache(text, {
+    font: font,
+    size: style['font-size'],
+    height: style['font-height'],
+    curveSegments: CURVE_SEGMENTS
+  });
+
+}
+
 function getGeometry(character, options) {
   var hash = objectHash({ character: character, options: options });
 
@@ -19,6 +31,6 @@ function getGeometry(character, options) {
 
   return cache[hash] ? cache[hash] :
     cache[hash] = new THREE.TextGeometry(character, options);
-};
+}
 
-module.exports = getGeometry;
+module.exports = ;

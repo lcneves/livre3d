@@ -3,19 +3,9 @@
 const THREE = require('three');
 const fontCache = require('./font-cache.js');
 
+const CURVE_SEGMENTS = 12;
+
 module.exports = function(fonts) {
-
-  function makeGeometry(word, style) {
-    var charArray = word.split('');
-    var offset = 0;
-    var geometry = fontCache(text, {
-      font: font,
-      size: style['font-size'],
-      height: style['font-height'],
-      curveSegments: 12
-    });
-
-  }
 
   function makeText(text, style) {
     var wordStringArray = text.split(' ');
