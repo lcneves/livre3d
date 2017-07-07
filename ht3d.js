@@ -8,7 +8,7 @@
 
 'use strict';
 
-function parse(html, Object3D) {
+function parse(html, parentObject, Object3D) {
 
   var array = html.split('>');
   for (let index = 0; index < array.length; index++) {
@@ -59,6 +59,7 @@ function parse(html, Object3D) {
 
     if (tagName) {
       var object = new Object3D();
+      object._parent = parentObject;
       object.setProperty('tag', tagName);
 
       for (let prop of props) {

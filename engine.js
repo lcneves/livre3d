@@ -101,7 +101,10 @@ module.exports = function (options) {
   // Functions to be exported.
   // Exported functions get assigned to a variable. Utility functions don't.
   function importTemplate(template, parentObject) {
-    parentObject.add(new Object3D({ template: template }), { rearrange: true });
+    parentObject.add(new Object3D({
+      template: template,
+      setParent: parentObject
+    }), { rearrange: true });
   }
 
   var makeShell = function makeShell() {

@@ -230,13 +230,15 @@ module.exports = function (theme, options) {
 
       options = (options && typeof options === 'object') ? options : {};
 
+      var parentObject = options.setParent ? options.setParent : null;
+
       if (options.hypertext) {
-        return ht3d.parse(options.hypertext, Object3D);
+        return ht3d.parse(options.hypertext, parentObject, Object3D);
       }
 
       if (options.template) {
         const hypertext = theme.templates[options.template]();
-        return ht3d.parse(hypertext, Object3D);
+        return ht3d.parse(hypertext, parentObject, Object3D);
       }
 
       if (options.mesh) {
@@ -258,12 +260,12 @@ module.exports = function (theme, options) {
     getStyle(property) {
       var currentObject = this;
       do {
-        if (currentObject._style[property]) {
+        if (currentObject._style[property] !== undefined) {
           return currentObject._style[property];
         }
-        currentObject = currentObject.parent;
+        currentObject = currentObject.parent || currentObject._parent;
       }
-      while (currentObject.parent);
+      while (currentObject.parent || currentObject._parent);
 
       return undefined;
     }

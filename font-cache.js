@@ -12,25 +12,29 @@ const objectHash = require('object-hash');
 
 var cache = {};
 
-function makeGeometry(word, style) {
-  var charArray = word.split('');
-  var offset = 0;
-  var geometry = fontCache(text, {
-    font: font,
-    size: style['font-size'],
-    height: style['font-height'],
-    curveSegments: CURVE_SEGMENTS
-  });
-
-}
-
-function getGeometry(character, options) {
-  var hash = objectHash({ character: character, options: options });
+function makeCharGeometry(character, style) {
+  var hash = objectHash({ character: character, style: style });
 
   console.dir(cache[hash]);
 
   return cache[hash] ? cache[hash] :
-    cache[hash] = new THREE.TextGeometry(character, options);
+    cache[hash] = new THREE.TextGeometry(character, style);
 }
 
-module.exports = ;
+function makeWordGeometry(word, style) {
+  var charArray = word.split('');
+  var offset = 0;
+  var geometry = new THREE.Geometry();
+
+  for (let character of charArray) {
+    var charGeometry = makeCharGeometry(character, style);
+    charGeometry.translate(offset, 0, 0);
+    geometry.merge(charGeometry);
+    charGeometry.computeBoundingBox();
+    offset += charGeometry.boundingBox.max.x - charGeometry.boundingBox.min.x;
+  }
+
+  return geometry;
+}
+
+module.exports.makeWordGeometry = makeWordGeometry;
