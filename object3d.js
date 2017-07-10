@@ -58,6 +58,54 @@ module.exports = function (theme, options) {
     return directionAxis;
   }
 
+  function getDimensionsFromBbox(bbox) {
+    return {
+      x: bbox.max.x - bbox.min.x,
+      y: bbox.max.y - bbox.min.y,
+      z: bbox.max.z - bbox.min.z
+    };
+  }
+
+  function makeBboxFromImage(image) {
+    const pixelToWorldRatio = 40; //TODO: Find out a logic for this
+    return {
+      min: {
+        x: - image.width / (2 * pixelToWorldRatio),
+        y: - image.height / (2 * pixelToWorldRatio),
+        z: 0
+      },
+      max: {
+        x: image.width / (2 * pixelToWorldRatio),
+        y: image.height / (2 * pixelToWorldRatio),
+        z: 0
+      }
+    };
+  }
+
+  function getBboxFromObject(object) {
+    if (object.geometry) {
+      if (object.geometry.boundingBox === null) {
+        object.geometry.computeBoundingBox();
+      }
+      return object.geometry.boundingBox;
+    }
+
+    else if ( // Sprites should fall in this category
+      object.material &&
+      object.material.map &&
+      object.material.map.image &&
+      object.material.map.image.width &&
+      object.material.map.image.height)
+    {
+      return makeBboxFromImage(object.material.map.image);
+    }
+
+    // Last resort
+    else {
+      return new THREE.Box3().setFromObject(object);
+    }
+  }
+
   /*
    * Gives the object's world dimensions in a boundary box.
    * By default, does not include margins; only paddings.
@@ -98,13 +146,8 @@ module.exports = function (theme, options) {
       return virtualBox;
     }
 
-    else {
-      const bbox = new THREE.Box3().setFromObject(object);
-      return {
-        x: bbox.max.x - bbox.min.x,
-        y: bbox.max.y - bbox.min.y,
-        z: bbox.max.z - bbox.min.z
-      };
+    else { // Not _isLivreObject
+      return getDimensionsFromBbox(getBboxFromObject(object));
     }
   }
 
@@ -140,7 +183,7 @@ module.exports = function (theme, options) {
     else {
       var position = new THREE.Vector3();
       position.setFromMatrixPosition(object.matrixWorld);
-      const bbox = new THREE.Box3().setFromObject(object);
+      const bbox = getBboxFromObject(object);
       return {
         left: position.x - bbox.min.x,
         right: bbox.max.x - position.x,
@@ -230,6 +273,10 @@ module.exports = function (theme, options) {
 
       options = (options && typeof options === 'object') ? options : {};
 
+      // This passes a parameter to the HT3D parser that will be incorporated
+      // in the resulting Object3D as the `_parent` property. It is necessary
+      // for inheritance of style properties without messing with THREE's 
+      // `parent` property.
       var parentObject = options.setParent ? options.setParent : null;
 
       if (options.hypertext) {
@@ -302,13 +349,27 @@ module.exports = function (theme, options) {
 
     makeText() {
       if (this._ht3d && this._ht3d.text) {
+
+        // Headers get rendered in real 3D characters;
+        // other tags get rendered as sprites based on 2D HTML5 canvases
+        var options = {};
+        switch (this._ht3d.tag) {
+          case 'h1':
+          case 'h2':
+          case 'h3':
+          case 'h4':
+          case 'h5':
+          case 'h6':
+            options.text3D = true;
+        }
+
         text.make(this._ht3d.text, {
           'font-family': this.getStyle('font-family'),
           'font-size': this.getStyle('font-size'),
           'font-height': this.getStyle('font-height'),
           'font-weight': this.getStyle('font-weight'),
           'color': this.getStyle('color')
-        }).then(newText => {
+        }, options).then(newText => {
           this.add(newText, { rearrange: true });
         });
       }
