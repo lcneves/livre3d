@@ -12,11 +12,12 @@ module.exports = function (options) {
 
   const THREE = require('three');
 
-  var theme = options.theme;
+  const theme = options.theme;
 
   const Object3D = require('./object3d.js')(theme);
   const Body = require('./body.js')(Object3D);
   const Camera = require('./camera.js');
+  const windowUtils = require('./window-utils.js');
 
   const far =
     theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -25,6 +26,8 @@ module.exports = function (options) {
     far: far,
     near: far * theme.nearFarRatio
   };
+
+  windowUtils.init(theme.worldWidth, window.innerHeight);
 
   var scene,
       lights;
@@ -46,12 +49,13 @@ module.exports = function (options) {
   // Resize canvas on window resize
   window.addEventListener('resize', function () {
     var aspectRatio = window.innerWidth / window.innerHeight;
-
+    windowUtils.windowWidth = window.innerWidth;
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     if (camera) {
       camera.aspectRatio = aspectRatio;
     }
+    
     if (body) {
       body.aspectRatio = aspectRatio;
     }

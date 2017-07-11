@@ -16,6 +16,7 @@ module.exports = function (theme, options) {
   const style = require('./style.js')(options);
   theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
+  const windowUtils = require('./window-utils.js');
 
   class Background extends THREE.PlaneGeometry {
     constructor(object) {
@@ -67,16 +68,16 @@ module.exports = function (theme, options) {
   }
 
   function makeBboxFromImage(image) {
-    const pixelToWorldRatio = 40; //TODO: Find out a logic for this
+    const worldToPixels = windowUtils.worldToPixels
     return {
       min: {
-        x: - image.width / (2 * pixelToWorldRatio),
-        y: - image.height / (2 * pixelToWorldRatio),
+        x: - image.width / (2 * worldToPixels),
+        y: - image.height / (2 * worldToPixels),
         z: 0
       },
       max: {
-        x: image.width / (2 * pixelToWorldRatio),
-        y: image.height / (2 * pixelToWorldRatio),
+        x: image.width / (2 * worldToPixels),
+        y: image.height / (2 * worldToPixels),
         z: 0
       }
     };

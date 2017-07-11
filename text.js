@@ -2,8 +2,10 @@
 
 const THREE = require('three');
 const fontCache = require('./font-cache.js');
+const windowUtils = require('./window-utils.js');
 
 const CURVE_SEGMENTS = 12;
+const WORLD_TO_FONT_SIZE = 16;
 
 function getColorString(num) {
   const filling = '000000';
@@ -26,8 +28,8 @@ module.exports = function(fonts) {
 //        var geometry = fontCache.makeWordGeometry(text, {
         var geometry = new THREE.TextGeometry(text, {
           font: font,
-          size: style['font-size'],
-          height: style['font-height'],
+          size: style['font-size'] / WORLD_TO_FONT_SIZE,
+          height: style['font-height'] / WORLD_TO_FONT_SIZE,
           curveSegments: CURVE_SEGMENTS,
           bevelEnabled: false
         });
@@ -44,7 +46,7 @@ module.exports = function(fonts) {
   // Adapted from https://jsfiddle.net/h9sub275/4/
   function makeTextSprite (text, style) {
     return new Promise(resolve => {
-      const fontSize = style['font-size'] * 30;
+      const fontSize = style['font-size'];
 
       var ctx, texture, sprite, spriteMaterial, 
         canvas = document.createElement('canvas');
@@ -56,6 +58,7 @@ module.exports = function(fonts) {
       canvas.width = ctx.measureText(text).width;
       canvas.height = fontSize * 2; // fontsize * 1.5
       var canvasRatio = canvas.width / canvas.height;
+      var fontScaleFactor = windowUtils.getFontScaleFactor(canvas.width);
 
       // after setting the canvas width/height we have to re-set font to apply!?
       // looks like ctx reset
@@ -64,15 +67,13 @@ module.exports = function(fonts) {
 
       ctx.fillText(text, 0, fontSize, canvas.width);
 
-      document.body.appendChild(canvas);
-
       texture = new THREE.Texture(canvas);
-//      texture.minFilter = THREE.LinearFilter; // NearestFilter;
+      texture.minFilter = THREE.LinearFilter; // NearestFilter;
       texture.needsUpdate = true;
 
-      spriteMaterial = new THREE.SpriteMaterial({map : texture});
+      spriteMaterial = new THREE.SpriteMaterial({ map : texture });
       sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(3 * canvasRatio, 3, 1);
+      sprite.scale.set(fontScaleFactor, fontScaleFactor / canvasRatio, 1);
 
       resolve(sprite);
     });
