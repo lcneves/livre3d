@@ -27,7 +27,7 @@ module.exports = function (options) {
     near: far * theme.nearFarRatio
   };
 
-  windowUtils.init(theme.worldWidth, window.innerHeight);
+  windowUtils.init(theme.worldWidth, window.innerWidth);
 
   var scene,
       lights;
