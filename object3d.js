@@ -17,6 +17,7 @@ module.exports = function (theme, options) {
   theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
   const windowUtils = require('./window-utils.js');
+  const messages = require('./messages.js');
 
   class Background extends THREE.PlaneGeometry {
     constructor(object) {
@@ -83,6 +84,17 @@ module.exports = function (theme, options) {
     };
   }
 
+  function isSpriteFromCanvas (object) {
+    return (
+      object.material &&
+      object.material.map &&
+      object.material.map.image &&
+      object.material.map.image.width &&
+      object.material.map.image.height
+    );
+  };
+
+
   function getBboxFromObject(object) {
     if (object.geometry) {
       if (object.geometry.boundingBox === null) {
@@ -91,13 +103,7 @@ module.exports = function (theme, options) {
       return object.geometry.boundingBox;
     }
 
-    else if ( // Sprites should fall in this category
-      object.material &&
-      object.material.map &&
-      object.material.map.image &&
-      object.material.map.image.width &&
-      object.material.map.image.height)
-    {
+    else if (isSpriteFromCanvas(object)) {
       return makeBboxFromImage(object.material.map.image);
     }
 
@@ -234,6 +240,14 @@ module.exports = function (theme, options) {
     return position;
   }
 
+  function scaleSprite (sprite) {
+    var width = sprite.material.map.image.width;
+    var aspect = width / sprite.material.map.image.height;
+    var scaleFactor = windowUtils.getFontScaleFactor(width);
+
+    sprite.scale.set(scaleFactor, scaleFactor / aspect, 1);
+  }
+
   function positionChildren(parentObject) {
     var offset = makeInitialPosition();
     offset.x.distance += getSpacer(parentObject, 'left');
@@ -263,6 +277,9 @@ module.exports = function (theme, options) {
       }
       if (child._isLivreObject) {
         positionChildren(child);
+      }
+      else if (isSpriteFromCanvas(child)) {
+        scaleSprite(child);
       }
     }
   }
@@ -385,7 +402,7 @@ module.exports = function (theme, options) {
         while (topObject.parent && topObject.parent._isLivreObject) {
           topObject = topObject.parent;
         }
-        topObject.arrangeChildren();
+        messages.setMessage('needsArrange', topObject);
       }
     }
   }

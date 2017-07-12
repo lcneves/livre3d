@@ -18,6 +18,7 @@ module.exports = function (options) {
   const Body = require('./body.js')(Object3D);
   const Camera = require('./camera.js');
   const windowUtils = require('./window-utils.js');
+  const messages = require('./messages.js');
 
   const far =
     theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -64,9 +65,20 @@ module.exports = function (options) {
   // Load utility libraries of this project
   require('./utils/click.js')(THREE, renderer, camera, body);
 
+  function arrangeObjects () {
+    var objectToArrange = messages.getMessage('needsArrange');
+    if (typeof objectToArrange === 'object' &&
+        typeof objectToArrange.arrangeChildren === 'function')
+    {
+      objectToArrange.arrangeChildren();
+      messages.setMessage('needsArrange', false);
+    }
+  }
+
   function render() {
-    requestAnimationFrame(render);
+    arrangeObjects();
     renderer.render(scene, camera);
+    requestAnimationFrame(render);
   }
 
   function resetScene() {

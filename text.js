@@ -59,8 +59,6 @@ module.exports = function(fonts) {
       // setting canvas width/height before ctx draw, else canvas is empty
       canvas.width = ctx.measureText(text).width;
       canvas.height = fontSize * 2; // fontsize * 1.5
-      var canvasRatio = canvas.width / canvas.height;
-      var fontScaleFactor = windowUtils.getFontScaleFactor(canvas.width);
 
       // after setting the canvas width/height we have to re-set font to apply!?
       // looks like ctx reset
@@ -99,7 +97,6 @@ module.exports = function(fonts) {
 
       spriteMaterial = new THREE.SpriteMaterial({ map : texture });
       sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(fontScaleFactor, fontScaleFactor / canvasRatio, 1);
 
       resolve(sprite);
 
