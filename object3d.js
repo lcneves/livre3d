@@ -19,18 +19,18 @@ module.exports = function (theme, options) {
   const windowUtils = require('./window-utils.js');
   const messages = require('./messages.js');
 
-  class Background extends THREE.PlaneGeometry {
+  class Background extends THREE.Mesh {
     constructor(object) {
       if (object && object._isLivreObject) 
       {
-        const style = object.style;
+        const style = object._style;
         if (!style) {
           throw new Error ('Object does not have a style property!');
         }
-        var bgColor = object.style['background-color'];
+        var bgColor = style['background-color'];
         var dimensions = object.dimensions;
         var material = new THREE.MeshPhongMaterial({
-          color: object.style['background-color']
+          color: style['background-color']
         });
         var geometry = new THREE.PlaneGeometry(dimensions.x, dimensions.y);
         super(geometry, material);
@@ -192,12 +192,12 @@ module.exports = function (theme, options) {
       position.setFromMatrixPosition(object.matrixWorld);
       const bbox = getBboxFromObject(object);
       return {
-        left: position.x - bbox.min.x,
-        right: bbox.max.x - position.x,
-        top: bbox.max.y - position.y,
-        bottom: position.y - bbox.min.y,
-        far: position.z - bbox.min.z,
-        near: bbox.max.z - position.z
+        left: - bbox.min.x,
+        right: bbox.max.x,
+        top: bbox.max.y,
+        bottom: - bbox.min.y,
+        far: - bbox.min.z,
+        near: bbox.max.z
       };
     }
   }
@@ -255,6 +255,26 @@ module.exports = function (theme, options) {
     );
   }
 
+  function resizeChildren (parentObject) {
+    for (let child of parentObject.children) {
+      if (isText3D(child)) {
+        child._resize(windowUtils.worldToPixels);
+      }
+      else if (isSpriteFromCanvas(child)) {
+        scaleSprite(child);
+      }
+    }
+
+    for (let child of parentObject.children) {
+      if (child._isBackground) {
+        parentObject.remove(child);
+        parentObject.add(new Background(parentObject));
+        break;
+      }
+    }
+  }
+
+
   function positionChildren(parentObject) {
     var offset = makeInitialPosition();
     offset.x.distance += getSpacer(parentObject, 'left');
@@ -266,7 +286,6 @@ module.exports = function (theme, options) {
       let position;
 
       if (child._isBackground) {
-        child = new Background(parentObject);
         position = makeWorldPosition(
           child,
           parentObject,
@@ -274,11 +293,6 @@ module.exports = function (theme, options) {
         );
       }
       else {
-
-        if (isText3D(child)) {
-          child._resize(windowUtils.worldToPixels);
-        }
-
         position = makeWorldPosition(child, parentObject, offset);
         let directionAxis = getDirectionAxis(parentObject._style['direction']);
         offset[directionAxis].distance +=
@@ -288,10 +302,7 @@ module.exports = function (theme, options) {
         child.position[axis] = position[axis];
       }
       if (child._isLivreObject) {
-        positionChildren(child);
-      }
-      else if (isSpriteFromCanvas(child)) {
-        scaleSprite(child);
+        child.arrangeChildren();
       }
     }
   }
@@ -348,6 +359,7 @@ module.exports = function (theme, options) {
     }
 
     arrangeChildren() {
+      resizeChildren(this);
       positionChildren(this);
     }
 
@@ -375,6 +387,10 @@ module.exports = function (theme, options) {
 
     makeStyle() {
       this._style = style.make(theme.stylesheets, this);
+
+      if (this._style['background-color']) {
+        this.add(new Background(this));
+      }
     }
 
     makeText() {
