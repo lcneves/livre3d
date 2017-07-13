@@ -248,6 +248,13 @@ module.exports = function (theme, options) {
     sprite.scale.set(scaleFactor, scaleFactor / aspect, 1);
   }
 
+  function isText3D (object) {
+    return(
+      object.geometry &&
+      object.geometry.type === 'TextGeometry'
+    );
+  }
+
   function positionChildren(parentObject) {
     var offset = makeInitialPosition();
     offset.x.distance += getSpacer(parentObject, 'left');
@@ -267,6 +274,11 @@ module.exports = function (theme, options) {
         );
       }
       else {
+
+        if (isText3D(child)) {
+          child._resize(windowUtils.worldToPixels);
+        }
+
         position = makeWorldPosition(child, parentObject, offset);
         let directionAxis = getDirectionAxis(parentObject._style['direction']);
         offset[directionAxis].distance +=

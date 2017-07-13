@@ -5,7 +5,6 @@ const fontCache = require('./font-cache.js');
 const windowUtils = require('./window-utils.js');
 
 const CURVE_SEGMENTS = 12;
-const WORLD_TO_FONT_SIZE = 16;
 
 function getColorString(num) {
   const filling = '000000';
@@ -14,6 +13,11 @@ function getColorString(num) {
   hexString = '#' + hexString.slice(-6);
   return hexString;
 }
+
+function resizeMesh (newWorldToPixelsRatio) {
+  var scaleFactor = this._worldToPixelsRatio / newWorldToPixelsRatio;
+  this.scale.set(scaleFactor, scaleFactor, scaleFactor);
+};
 
 module.exports = function(fonts) {
 
@@ -26,10 +30,12 @@ module.exports = function(fonts) {
     return new Promise(resolve => {
       fontPromise.then(font => {
 //        var geometry = fontCache.makeWordGeometry(text, {
+        const worldToPixels = windowUtils.worldToPixels;
+
         var geometry = new THREE.TextGeometry(text, {
           font: font,
-          size: style['font-size'] / WORLD_TO_FONT_SIZE,
-          height: style['font-height'] / WORLD_TO_FONT_SIZE,
+          size: style['font-size'] / worldToPixels,
+          height: style['font-height'] / worldToPixels,
           curveSegments: CURVE_SEGMENTS,
           bevelEnabled: false
         });
@@ -38,6 +44,9 @@ module.exports = function(fonts) {
         );
         var mesh = new THREE.Mesh(geometry, material);
 
+        // Needed to scale when screen width changes
+        mesh._worldToPixelsRatio = worldToPixels;
+        mesh._resize = resizeMesh;
         resolve(mesh);
       });
     });
