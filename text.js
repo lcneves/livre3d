@@ -3,6 +3,7 @@
 const THREE = require('three');
 const fontCache = require('./font-cache.js');
 const windowUtils = require('./window-utils.js');
+const units = require('./units.js');
 
 const CURVE_SEGMENTS = 12;
 
@@ -17,35 +18,36 @@ function getColorString(num) {
 function resizeMesh (newWorldToPixelsRatio) {
   var scaleFactor = this._worldToPixelsRatio / newWorldToPixelsRatio;
   this.scale.set(scaleFactor, scaleFactor, scaleFactor);
-};
+}
 
 module.exports = function(fonts) {
 
-  function makeText3D(text, style) {
+  function makeText3D(object) {
+    const text = object._ht3d.text;
+
 //    var wordStringArray = text.split(' ');
     var fontPromise = fonts[
-      style['font-family'] + '-' + style['font-weight']
+      object.getStyle('font-family') + '-' + object.getStyle('font-weight')
     ].dataPromise;
 
     return new Promise(resolve => {
       fontPromise.then(font => {
 //        var geometry = fontCache.makeWordGeometry(text, {
-        const worldToPixels = windowUtils.worldToPixels;
 
         var geometry = new THREE.TextGeometry(text, {
           font: font,
-          size: style['font-size'] / worldToPixels,
-          height: style['font-height'] / worldToPixels,
+          size: units.convert(object, 'font-size', 'world'),
+          height: units.convert(object, 'font-height', 'world'),
           curveSegments: CURVE_SEGMENTS,
           bevelEnabled: false
         });
         var material = new THREE.MeshPhongMaterial(
-          { color: style['color'] }
+          { color: object.getStyle('color') }
         );
         var mesh = new THREE.Mesh(geometry, material);
 
         // Needed to scale when screen width changes
-        mesh._worldToPixelsRatio = worldToPixels;
+        mesh._worldToPixelsRatio = windowUtils.worldToPixels;
         mesh._resize = resizeMesh;
         resolve(mesh);
       });
@@ -53,17 +55,17 @@ module.exports = function(fonts) {
   }
 
   // Adapted from https://jsfiddle.net/h9sub275/4/
-  function makeTextSprite (text, style) {
+  function makeTextSprite (object) {
+    const text = object._ht3d.text;
+
     return new Promise(resolve => {
-      const fontSize = style['font-size'];
+      const fontSize = units.convert(object, 'font-size');
 
       var ctx, texture, sprite, spriteMaterial, 
         canvas = document.createElement('canvas');
 
-      document.body.appendChild(canvas);
-
       ctx = canvas.getContext('2d');
-      ctx.font = fontSize + 'px ' + style['font-family'];
+      ctx.font = fontSize + 'px ' + object.getStyle('font-family');
 
       // setting canvas width/height before ctx draw, else canvas is empty
       canvas.width = ctx.measureText(text).width;
@@ -71,8 +73,8 @@ module.exports = function(fonts) {
 
       // after setting the canvas width/height we have to re-set font to apply!?
       // looks like ctx reset
-      ctx.font = fontSize + 'px ' + style['font-family'];
-      ctx.fillStyle = getColorString(style['color']);
+      ctx.font = fontSize + 'px ' + object.getStyle('font-family');
+      ctx.fillStyle = getColorString(object.getStyle('color'));
       ctx.fillText(text, 0, fontSize, canvas.width);
 
       /*
@@ -112,12 +114,30 @@ module.exports = function(fonts) {
     });
   }
 
-  return {
-    make: function (text, style, options) {
-      return (options && options.text3D) ?
-        makeText3D(text, style) :
-        makeTextSprite(text, style);
+  function make (object) {
+    if (!object ||
+        !object._ht3d ||
+        !object._ht3d.text ||
+        typeof object._ht3d.text !== 'string')
+    {
+      throw new Error('Text string not found in object!');
     }
+    switch (this._ht3d.tag) {
+      case 'h1':
+      case 'h2':
+      case 'h3':
+      case 'h4':
+      case 'h5':
+      case 'h6':
+        return makeText3D(object);
+
+      default:
+        return makeTextSprite(object);
+    }
+  }
+
+  return {
+    make: make
   };
 };
 

@@ -28,7 +28,7 @@ module.exports = function (options) {
     near: far * theme.nearFarRatio
   };
 
-  windowUtils.init(theme.worldWidth, window.innerWidth);
+  windowUtils.init(theme.worldWidth, window.innerWidth, window.innerHeight);
 
   var scene,
       lights;
@@ -51,6 +51,7 @@ module.exports = function (options) {
   window.addEventListener('resize', function () {
     var aspectRatio = window.innerWidth / window.innerHeight;
     windowUtils.windowWidth = window.innerWidth;
+    windowUtils.windowHeight = window.innerHeight;
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     if (camera) {

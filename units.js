@@ -12,32 +12,99 @@ const windowUtils = require('./window-utils.js');
 
 const REM_SIZE = 16;
 
-function parseString (sizeString, tailLength) {
-  var numberString = sizeString.slice(-tailLength);
-  var number = parseInt(numberString, 10);
+function parseSize (size) {
+  const supportedFormats = ['px', 'rem', 'em', 'vw', 'vh', '%'];
 
-  if (isNaN(number)) {
-    throw new Error('Size cannot be converted to number! Received ' +
-      numberString);
+  if (typeof size === 'number') {
+    return {
+      quantum: size,
+      unit: 'px'
+    };
   }
 
-  return number;
+  else if (typeof size === 'string') {
+    var quantum;
+    var unit;
+
+    for (let format of supportedFormats) {
+      if (size.endsWith(format)) {
+        quantum = parseInt(size.substring(0, format.length), 10);
+        unit = format;
+        break;
+      }
+    }
+
+    if (quantum && !isNaN(quantum)) {
+      return {
+        quantum: quantum,
+        unit: unit
+      };
+    }
+    else {
+      throw new Error('Unsupported size! Received: ' + size);
+    }
+  }
+
+  else {
+    throw new Error('Unsupported format! Expected string or number, received: '
+        + typeof size);
+  }
 }
 
-function toPixels (size, style) {
-  if (typeof size === 'number') {
-    return size;
-  }
-  else if (typeof size === 'string') {
+function convert (object, parameter, unit) {
 
-    if (size.endsWith('rem')) {
-      return parseString(size, 3) * REM_SIZE;
-    }
-    else if (size.endsWith('em')) {
-      return parseString(size, 2) * REM_SIZE; // TODO: * style('font-size');
-    }
-    else if (size.endsWith('vw')) {
-      return parseString(size, 2) * windowUtils.worldToPixels;
-    }
-    
+  var parsed = parseSize(object.getStyle(parameter));
+  var quantum;
+
+  switch (parsed.unit) {
+
+    case 'px':
+      quantum = parsed.quantum;
+      break;
+
+    case 'rem':
+      quantum = parsed.quantum * REM_SIZE;
+      break;
+
+    case 'em':
+      quantum = parsed.quantum * object.fontSize;
+      break;
+
+    case 'vw':
+      quantum = parsed.quantum * windowUtils.worldToPixels;
+      break;
+
+    case 'vh':
+      quantum = parsed.quantum *
+        windowUtils.worldToPixels / windowUtils.aspectRatio;
+      break;
+
+    case '%':
+      var multiplier = quantum / 100;
+      var currentObject = object;
+      var parentObject;
+      while (currentObject._parent) {
+        parentObject = currentObject._parent;
+        var parentSize = parseSize(parentObject, parameter);
+        if (parentSize.unit === '%') {
+          multiplier *= parentSize.quantum / 100;
+        }
+        else {
+          quantum = convert(parentObject, parameter, unit) * multiplier;
+          break;
+        }
+        currentObject = parentObject;
+      }
+      break;
+  }
+
+  if (unit === 'world') {
+    quantum = quantum / windowUtils.worldToPixels;
+  }
+
+  return quantum;
+}
+
+module.exports.parse = parseSize;
+module.exports.convert = convert;
 

@@ -10,18 +10,33 @@
 
 var _worldWidth = undefined;
 var _windowWidth = undefined;
+var _windowHeight = undefined;
 
 module.exports = {
-  init: function (worldWidth, windowWidth) {
-    _windowWidth = windowWidth;
+  init: function (worldWidth, windowWidth, windowHeight) {
     _worldWidth = worldWidth;
+    _windowWidth = windowWidth;
+    _windowHeight = windowHeight;
   },
+
   get windowWidth () {
     return _windowWidth;
   },
 
   set windowWidth (value) {
     _windowWidth = value;
+  },
+
+  get windowHeight () {
+    return _windowHeight;
+  },
+
+  set windowHeight (value) {
+    _windowHeight = value;
+  },
+
+  get aspectRatio () {
+    return _windowWidth / _windowHeight;
   },
 
   // Returns the number of pixels that is equivalent of one world unit

@@ -17,6 +17,7 @@ module.exports = function (theme, options) {
   theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
   const windowUtils = require('./window-utils.js');
+  const units = require('./units.js');
   const messages = require('./messages.js');
 
   class Background extends THREE.Mesh {
@@ -69,7 +70,7 @@ module.exports = function (theme, options) {
   }
 
   function makeBboxFromImage(image) {
-    const worldToPixels = windowUtils.worldToPixels
+    const worldToPixels = windowUtils.worldToPixels;
     return {
       min: {
         x: - image.width / (2 * worldToPixels),
@@ -92,8 +93,7 @@ module.exports = function (theme, options) {
       object.material.map.image.width &&
       object.material.map.image.height
     );
-  };
-
+  }
 
   function getBboxFromObject(object) {
     if (object.geometry) {
@@ -307,6 +307,16 @@ module.exports = function (theme, options) {
     }
   }
 
+  function getFontSize (object) {
+    const parsed = units.parse(object.getStyle('font-size'));
+    if (parsed.unit === 'em') {
+      return object._parent.fontSize * parsed.quantum;
+    }
+    else {
+      return units.parse(object, 'font-size');
+    }
+  }
+
 
   class Object3D extends THREE.Object3D {
     constructor(options) {
@@ -345,15 +355,19 @@ module.exports = function (theme, options) {
       return getBoundaries(this);
     }
 
+    get fontSize() {
+      return getFontSize(this);
+    }
+
     getStyle(property) {
       var currentObject = this;
       do {
         if (currentObject._style[property] !== undefined) {
           return currentObject._style[property];
         }
-        currentObject = currentObject.parent || currentObject._parent;
+        currentObject = currentObject._parent;
       }
-      while (currentObject.parent || currentObject._parent);
+      while (currentObject._parent);
 
       return undefined;
     }
@@ -394,36 +408,14 @@ module.exports = function (theme, options) {
     }
 
     makeText() {
-      if (this._ht3d && this._ht3d.text) {
-
-        // Headers get rendered in real 3D characters;
-        // other tags get rendered as sprites based on 2D HTML5 canvases
-        var options = {};
-        switch (this._ht3d.tag) {
-          case 'h1':
-          case 'h2':
-          case 'h3':
-          case 'h4':
-          case 'h5':
-          case 'h6':
-            options.text3D = true;
-        }
-
-        text.make(this._ht3d.text, {
-          'font-family': this.getStyle('font-family'),
-          'font-size': this.getStyle('font-size'),
-          'font-height': this.getStyle('font-height'),
-          'font-weight': this.getStyle('font-weight'),
-          'color': this.getStyle('color')
-        }, options).then(newText => {
-          this.add(newText, { rearrange: true });
-        });
-      }
+      text.make(this);
     }
 
     // Overrides THREE.Object3D's add function
     add(object, options) {
       THREE.Object3D.prototype.add.call(this, object);
+
+      object._parent = this;
 
       if (options && options.rearrange) {
         var topObject = this;
