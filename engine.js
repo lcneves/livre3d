@@ -60,6 +60,7 @@ module.exports = function (options) {
     
     if (body) {
       body.aspectRatio = aspectRatio;
+      messages.setMessage('needsArrange', body);
     }
   });
 

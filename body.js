@@ -32,7 +32,6 @@ module.exports = function(Object3D) {
 
     set aspectRatio(value) {
       this._aspect = value;
-      this.arrangeChildren();
     }
   }
 

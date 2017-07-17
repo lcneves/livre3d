@@ -264,8 +264,26 @@ module.exports = function (theme, options) {
     );
   }
 
-  function resizeChildren (parentObject) {
-    for (let child of parentObject.children) {
+  function updateBackground (object) {
+    for (let index = 0; index < object.children.length; index++) {
+      let child = object.children[index];
+
+      if (child._isBackground) {
+        child = new Background(object);
+        child.parent = object;
+        object.children.splice(index, 1, child);
+        break;
+      }
+    }
+  }
+ 
+  function resizeChildren (object) {
+    for (let child of object.children) {
+
+      if (child._isLivreObject) {
+        child.resizeChildren();
+      }
+
       if (isText3D(child)) {
         child._resize(windowUtils.worldToPixels);
       }
@@ -274,45 +292,39 @@ module.exports = function (theme, options) {
       }
     }
 
-    for (let child of parentObject.children) {
-      if (child._isBackground) {
-        parentObject.remove(child);
-        parentObject.add(new Background(parentObject));
-        break;
-      }
-    }
+    updateBackground(object);
   }
 
-
-  function positionChildren(parentObject) {
+  function positionChildren(object) {
     var offset = makeInitialPosition();
-    offset.x.distance += getSpacer(parentObject, 'left');
-    offset.y.distance += getSpacer(parentObject, 'top');
-    offset.z.distance += getSpacer(parentObject, 'far');
+    offset.x.distance += getSpacer(object, 'left');
+    offset.y.distance += getSpacer(object, 'top');
+    offset.z.distance += getSpacer(object, 'far');
 
-    for (let i = 0; i < parentObject.children.length; i++) {
-      let child = parentObject.children[i];
+    for (let child of object.children) {
       let position;
 
       if (child._isBackground) {
         position = makeWorldPosition(
           child,
-          parentObject,
+          object,
           makeInitialPosition()
         );
       }
       else {
-        position = makeWorldPosition(child, parentObject, offset);
+        position = makeWorldPosition(child, object, offset);
         let directionAxis =
-          getDirectionAxis(parentObject.getStyle('direction'));
+          getDirectionAxis(object.getStyle('direction'));
         offset[directionAxis].distance +=
           getDimensions(child, { includeMargin: true })[directionAxis];
       }
+
       for (let axis of ['x', 'y', 'z']) {
         child.position[axis] = position[axis];
       }
+
       if (child._isLivreObject) {
-        child.arrangeChildren();
+        child.positionChildren();
       }
     }
   }
@@ -381,9 +393,17 @@ module.exports = function (theme, options) {
       }
     }
 
-    arrangeChildren() {
+    resizeChildren() {
       resizeChildren(this);
+    }
+
+    positionChildren() {
       positionChildren(this);
+    }
+
+    arrangeChildren() {
+      this.resizeChildren();
+      this.positionChildren();
     }
 
     setWorldPosition(parentObject, offset) {
