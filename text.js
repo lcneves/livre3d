@@ -69,7 +69,7 @@ module.exports = function(fonts) {
 
       // setting canvas width/height before ctx draw, else canvas is empty
       canvas.width = ctx.measureText(text).width;
-      canvas.height = fontSize * 2; // fontsize * 1.5
+      canvas.height = fontSize * 1.2; // fontsize * 1.5
 
       // after setting the canvas width/height we have to re-set font to apply!?
       // looks like ctx reset
@@ -122,7 +122,7 @@ module.exports = function(fonts) {
     {
       throw new Error('Text string not found in object!');
     }
-    switch (this._ht3d.tag) {
+    switch (object._ht3d.tag) {
       case 'h1':
       case 'h2':
       case 'h3':

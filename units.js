@@ -23,18 +23,27 @@ function parseSize (size) {
   }
 
   else if (typeof size === 'string') {
+
+    if (!isNaN(size)) {
+      return {
+        quantum: +size,
+        unit: 'px'
+      };
+    }
+
     var quantum;
     var unit;
 
     for (let format of supportedFormats) {
       if (size.endsWith(format)) {
-        quantum = parseInt(size.substring(0, format.length), 10);
+        quantum = size.substring(0, size.length - format.length);
+        quantum = +quantum;
         unit = format;
         break;
       }
     }
 
-    if (quantum && !isNaN(quantum)) {
+    if (!isNaN(quantum)) {
       return {
         quantum: quantum,
         unit: unit

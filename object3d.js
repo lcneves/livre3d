@@ -24,14 +24,9 @@ module.exports = function (theme, options) {
     constructor(object) {
       if (object && object._isLivreObject) 
       {
-        const style = object._style;
-        if (!style) {
-          throw new Error ('Object does not have a style property!');
-        }
-        var bgColor = style['background-color'];
         var dimensions = object.dimensions;
         var material = new THREE.MeshPhongMaterial({
-          color: style['background-color']
+          color: object.getStyle('background-color')
         });
         var geometry = new THREE.PlaneGeometry(dimensions.x, dimensions.y);
         super(geometry, material);
@@ -100,7 +95,15 @@ module.exports = function (theme, options) {
       if (object.geometry.boundingBox === null) {
         object.geometry.computeBoundingBox();
       }
-      return object.geometry.boundingBox;
+      var bBox = JSON.parse(JSON.stringify(object.geometry.boundingBox));
+
+      // Adjust bounding box to current scale
+      for (let parameter in bBox) {
+        for (let axis in bBox[parameter]) {
+          bBox[parameter][axis] *= object.scale[axis];
+        }
+      }
+      return bBox;
     }
 
     else if (isSpriteFromCanvas(object)) {
@@ -139,15 +142,21 @@ module.exports = function (theme, options) {
           }
         }
       }
-      var style = object._style;
-      virtualBox.x += style['padding-left'] + style['padding-right'];
-      virtualBox.y += style['padding-top'] + style['padding-bottom'];
-      virtualBox.z += style['padding-far'] + style['padding-near'];
+      
+      virtualBox.x += units.convert(object, 'padding-left', 'world') +
+        units.convert(object, 'padding-right', 'world');
+      virtualBox.y += units.convert(object, 'padding-top', 'world') +
+        units.convert(object, 'padding-bottom', 'world');
+      virtualBox.z += units.convert(object, 'padding-far', 'world') +
+        units.convert(object, 'padding-near', 'world');
 
       if (options && options.includeMargin) {
-        virtualBox.x += style['margin-left'] + style['margin-right'];
-        virtualBox.y += style['margin-top'] + style['margin-bottom'];
-        virtualBox.z += style['margin-far'] + style['margin-near'];
+        virtualBox.x += units.convert(object, 'margin-left', 'world') +
+          units.convert(object, 'margin-right', 'world');
+        virtualBox.y += units.convert(object, 'margin-top', 'world') +
+          units.convert(object, 'margin-bottom', 'world');
+        virtualBox.z += units.convert(object, 'margin-far', 'world') +
+          units.convert(object, 'margin-near', 'world');
       }
 
       return virtualBox;
@@ -160,8 +169,8 @@ module.exports = function (theme, options) {
 
   function getSpacer(object, direction) {
     if (object._isLivreObject) {
-      return object._style['margin-' + direction] +
-        object._style['padding-' + direction];
+      return units.convert(object, 'margin-' + direction, 'world') +
+        units.convert(object, 'padding-' + direction, 'world');
     }
     else {
       return 0;
@@ -294,7 +303,8 @@ module.exports = function (theme, options) {
       }
       else {
         position = makeWorldPosition(child, parentObject, offset);
-        let directionAxis = getDirectionAxis(parentObject._style['direction']);
+        let directionAxis =
+          getDirectionAxis(parentObject.getStyle('direction'));
         offset[directionAxis].distance +=
           getDimensions(child, { includeMargin: true })[directionAxis];
       }
@@ -313,7 +323,7 @@ module.exports = function (theme, options) {
       return object._parent.fontSize * parsed.quantum;
     }
     else {
-      return units.parse(object, 'font-size');
+      return units.convert(object, 'font-size');
     }
   }
 
@@ -360,16 +370,15 @@ module.exports = function (theme, options) {
     }
 
     getStyle(property) {
-      var currentObject = this;
-      do {
-        if (currentObject._style[property] !== undefined) {
-          return currentObject._style[property];
-        }
-        currentObject = currentObject._parent;
+      if (this._style[property] !== undefined) {
+        return this._style[property];
       }
-      while (currentObject._parent);
-
-      return undefined;
+      else if (this._parent) {
+        return this._parent.getStyle(property);
+      }
+      else {
+        return undefined;
+      }
     }
 
     arrangeChildren() {
@@ -386,6 +395,15 @@ module.exports = function (theme, options) {
         if (position.hasOwnProperty(prop)) {
           this.position[prop] = position[prop];
         }
+      }
+    }
+
+    getProperty(property) {
+      if (this._ht3d) {
+        return this._ht3d[property];
+      }
+      else {
+        return undefined;
       }
     }
 
@@ -408,7 +426,9 @@ module.exports = function (theme, options) {
     }
 
     makeText() {
-      text.make(this);
+      if (this.getProperty('text') !== undefined) {
+        text.make(this).then(newText => this.add(newText, { rearrange: true }));
+      }
     }
 
     // Overrides THREE.Object3D's add function

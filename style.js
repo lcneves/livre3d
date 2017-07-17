@@ -79,9 +79,6 @@ module.exports = function(options) {
 
     if (typeof value === 'string') {
       var values = value.split(' ');
-      for (let i = 0; i < values.length; i++) {
-        values[i] = Number(values[i]);
-      }
 
       switch (values.length) {
         case 1:
