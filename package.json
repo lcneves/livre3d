@@ -1,7 +1,7 @@
 {
-  "name": "livre3d",
+  "name": "w3d",
   "version": "0.0.44",
-  "description": "Livre3D rendering engine for the Livre project.",
+  "description": "Framework to create 3D web pages.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,18 +9,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lcneves/livre3d.git"
+    "url": "git+https://github.com/lcneves/w3d.git"
   },
   "keywords": [
     "3d",
+    "w3d",
+    "framework",
+    "webdesign",
+    "three.js",
+    "webgl",
     "Livre"
   ],
   "author": "Lucas Neves <lcneves@gmail.com> (https://www.lcneves.com)",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/lcneves/livre3d/issues"
+    "url": "https://github.com/lcneves/w3d/issues"
   },
-  "homepage": "https://github.com/lcneves/livre3d#readme",
+  "homepage": "https://github.com/lcneves/w3d#readme",
   "dependencies": {
     "livre-client": ">=0.0.0",
     "object-hash": "^1.1.8",
