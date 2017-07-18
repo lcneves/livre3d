@@ -20,11 +20,14 @@ module.exports = function (theme, options) {
   const units = require('./units.js');
   const messages = require('./messages.js');
 
+  const AXES = ['x', 'y', 'z'];
+
+
   class Background extends THREE.Mesh {
     constructor(object) {
       if (object && object._isw3dObject) 
       {
-        var dimensions = object.dimensions;
+        var dimensions = object.stretchedDimensions;
         var material = new THREE.MeshPhongMaterial({
           color: object.getStyle('background-color')
         });
@@ -116,58 +119,109 @@ module.exports = function (theme, options) {
     }
   }
 
+  function makeInitialVirtualBox () {
+    return {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+  }
+
+  function updateStretchedDimensions (object) {
+    if (!object.parentDimensions) {
+      if (object._parent) {
+        object.parentDimensions = object._parent.dimensions;
+      }
+      else {
+        return object.stretchedDimensions = object.dimensions;
+      }
+    }
+
+    const display = object.getStyle('display');
+    const parentDirection = object._parent.getStyle('direction');
+    const alignSelf = object.getStyle('align-self');
+    const align = alignSelf !== 'initial' ?
+      alignSelf : object._parent.getStyle('align-items');
+
+    var dimensions = object.dimensions;
+
+    switch (display) {
+      case 'plane':
+        dimensions.x = object.parentDimensions.x;
+        dimensions.y = object.parentDimensions.y;
+        break;
+
+      case 'block':
+        if (align === 'stretch') {
+          if (parentDirection === 'column') {
+            dimensions.x = object.parentDimensions.x;
+          }
+          else if (parentDirection === 'row') {
+            dimensions.y = object.parentDimensions.y;
+          }
+        }
+        break;
+    }
+
+    return object.stretchedDimensions = dimensions;
+  }
+
   /*
    * Gives the object's world dimensions in a boundary box.
-   * By default, does not include margins; only paddings.
+   * Does not include margins; only paddings.
    */
-  function getDimensions(object, options) {
-    if (object._isw3dObject) {
-      options = typeof options === 'object' && options !== null ? options : {};
-      var virtualBox = {
-        x: 0,
-        y: 0,
-        z: 0
-      };
-      for (let child of object.children) {
-        if(!child._ignoreSize) {
-          let dimensions = getDimensions(child, { includeMargin: true });
-          for (let axis of ['x', 'y', 'z']) {
-            let directionAxis = getDirectionAxis(options.direction);
-            if (axis === directionAxis) {
-              virtualBox[axis] += dimensions[axis];
-            }
-            else {
-              virtualBox[axis] = Math.max(virtualBox[axis], dimensions[axis]);
-            }
+  function updateDimensions(object) {
+    options = typeof options === 'object' && options !== null ? options : {};
+    var virtualBox = makeInitialVirtualBox();
+
+    for (let child of object.children) {
+      if(!child._ignoreSize) {
+        let dimensions = child.isw3dObject ?
+          addSpacers(child.updateDimensions(), getSpacers(child, 'margin')) :
+          getDimensionsFromBbox(getBboxFromObject(child));
+
+        let directionAxis = getDirectionAxis(options.direction);
+        for (let axis of AXES) {
+          if (axis === directionAxis) {
+            virtualBox[axis] += dimensions[axis];
+          }
+          else {
+            virtualBox[axis] = Math.max(virtualBox[axis], dimensions[axis]);
           }
         }
       }
-      
-      virtualBox.x += units.convert(object, 'padding-left', 'world') +
-        units.convert(object, 'padding-right', 'world');
-      virtualBox.y += units.convert(object, 'padding-top', 'world') +
-        units.convert(object, 'padding-bottom', 'world');
-      virtualBox.z += units.convert(object, 'padding-far', 'world') +
-        units.convert(object, 'padding-near', 'world');
-
-      if (options && options.includeMargin) {
-        virtualBox.x += units.convert(object, 'margin-left', 'world') +
-          units.convert(object, 'margin-right', 'world');
-        virtualBox.y += units.convert(object, 'margin-top', 'world') +
-          units.convert(object, 'margin-bottom', 'world');
-        virtualBox.z += units.convert(object, 'margin-far', 'world') +
-          units.convert(object, 'margin-near', 'world');
-      }
-
-      return virtualBox;
     }
 
-    else { // Not _isw3dObject
-      return getDimensionsFromBbox(getBboxFromObject(object));
+    virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
+
+    for (let child of object.children) {
+      child.parentDimensions = virtualBox;
+      child.updateStretchedDimensions();
     }
+
+    return virtualBox;
   }
 
-  function getSpacer(object, direction) {
+  function getSpacers (object, type) {
+    return {
+      x: units.convert(object, type + '-left', 'world') +
+        units.convert(object, type + '-right', 'world'),
+      y: units.convert(object, type + '-top', 'world') +
+        units.convert(object, type + '-bottom', 'world'),
+      z: units.convert(object, type + '-far', 'world') +
+      units.convert(object, type + '-near', 'world')
+    };
+  }
+
+  function addSpacers (box, spacers) {
+    for (let axis of AXES) {
+      box[axis] += spacers[axis];
+    }
+    return box;
+  }
+ 
+
+  function getSpacer (object, direction) {
     if (object._isw3dObject) {
       return units.convert(object, 'margin-' + direction, 'world') +
         units.convert(object, 'padding-' + direction, 'world');
@@ -231,7 +285,7 @@ module.exports = function (theme, options) {
 
     var position = {};
 
-    for (let axis of ['x', 'y', 'z']) {
+    for (let axis of AXES) {
       position[axis] = offset[axis].distance;
       if (!childObject._isw3dObject) {
         position[axis] += childBoundaries[offset[axis].reference];
@@ -316,10 +370,13 @@ module.exports = function (theme, options) {
         let directionAxis =
           getDirectionAxis(object.getStyle('direction'));
         offset[directionAxis].distance +=
-          getDimensions(child, { includeMargin: true })[directionAxis];
+          addSpacers(
+            child.dimensions,
+            getSpacers(child, 'margin')
+          )[directionAxis];
       }
 
-      for (let axis of ['x', 'y', 'z']) {
+      for (let axis of AXES) {
         child.position[axis] = position[axis];
       }
 
@@ -370,7 +427,12 @@ module.exports = function (theme, options) {
     }
 
     get dimensions() {
-      return getDimensions(this);
+      return this._dimensions ?
+        this._dimensions : this.updateDimensions();
+    }
+
+    updateDimensions() {
+      return this._dimensions = updateDimensions(this);
     }
 
     get boundaries() {
@@ -395,6 +457,29 @@ module.exports = function (theme, options) {
 
     resizeChildren() {
       resizeChildren(this);
+    }
+
+    get parentDimensions() {
+      return this._parentDimensions;
+    }
+
+    set parentDimensions(dimensions) {
+      this._parentDimensions = dimensions;
+    }
+
+    updateStretchedDimensions() {
+      return this._parent ?
+        this._stretchedDimensions = updateStretchedDimensions(this) :
+        this.dimensions;
+    }
+
+    get stretchedDimensions() {
+      return this._stretchedDimensions ?
+        this._stretchedDimensions : this.updateStretchedDimensions();
+    }
+
+    set stretchedDimensions(dimensions) {
+      this._stretchedDimensions = dimensions;
     }
 
     positionChildren() {
