@@ -2,7 +2,7 @@
  * ht3d.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Exports a function that parses an HT3D string and returns a Livre3D object.
+ * Exports a function that parses an HT3D string and returns a w3d object.
  * Part of the Livre project.
  */
 

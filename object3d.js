@@ -3,7 +3,7 @@
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
  * Exports an object that extends THREE.Object3D with extra functionality.
- * Part of the Livre project.
+ * Part of the w3d project.
  */
 
 'use strict';
@@ -22,7 +22,7 @@ module.exports = function (theme, options) {
 
   class Background extends THREE.Mesh {
     constructor(object) {
-      if (object && object._isLivreObject) 
+      if (object && object._isw3dObject) 
       {
         var dimensions = object.dimensions;
         var material = new THREE.MeshPhongMaterial({
@@ -121,7 +121,7 @@ module.exports = function (theme, options) {
    * By default, does not include margins; only paddings.
    */
   function getDimensions(object, options) {
-    if (object._isLivreObject) {
+    if (object._isw3dObject) {
       options = typeof options === 'object' && options !== null ? options : {};
       var virtualBox = {
         x: 0,
@@ -162,13 +162,13 @@ module.exports = function (theme, options) {
       return virtualBox;
     }
 
-    else { // Not _isLivreObject
+    else { // Not _isw3dObject
       return getDimensionsFromBbox(getBboxFromObject(object));
     }
   }
 
   function getSpacer(object, direction) {
-    if (object._isLivreObject) {
+    if (object._isw3dObject) {
       return units.convert(object, 'margin-' + direction, 'world') +
         units.convert(object, 'padding-' + direction, 'world');
     }
@@ -185,7 +185,7 @@ module.exports = function (theme, options) {
    * - the z axis grows to the near.
    */
   function getBoundaries(object) {
-    if (object._isLivreObject) {
+    if (object._isw3dObject) {
       var dimensions = object.dimensions;
       return {
         left: 0,
@@ -226,14 +226,14 @@ module.exports = function (theme, options) {
   function makeWorldPosition(childObject, parentObject, offset) {
     const parentBoundaries = parentObject.boundaries;
     const parentDimensions = parentObject.dimensions;
-    const childBoundaries = childObject._isLivreObject ?
+    const childBoundaries = childObject._isw3dObject ?
       null : getBoundaries(childObject);
 
     var position = {};
 
     for (let axis of ['x', 'y', 'z']) {
       position[axis] = offset[axis].distance;
-      if (!childObject._isLivreObject) {
+      if (!childObject._isw3dObject) {
         position[axis] += childBoundaries[offset[axis].reference];
       }
       switch (offset[axis].reference) {
@@ -280,7 +280,7 @@ module.exports = function (theme, options) {
   function resizeChildren (object) {
     for (let child of object.children) {
 
-      if (child._isLivreObject) {
+      if (child._isw3dObject) {
         child.resizeChildren();
       }
 
@@ -323,7 +323,7 @@ module.exports = function (theme, options) {
         child.position[axis] = position[axis];
       }
 
-      if (child._isLivreObject) {
+      if (child._isw3dObject) {
         child.positionChildren();
       }
     }
@@ -365,7 +365,7 @@ module.exports = function (theme, options) {
         super.add(options.mesh);
       }
 
-      this._isLivreObject = true;
+      this._isw3dObject = true;
 
     }
 
@@ -459,7 +459,7 @@ module.exports = function (theme, options) {
 
       if (options && options.rearrange) {
         var topObject = this;
-        while (topObject.parent && topObject.parent._isLivreObject) {
+        while (topObject.parent && topObject.parent._isw3dObject) {
           topObject = topObject.parent;
         }
         messages.setMessage('needsArrange', topObject);

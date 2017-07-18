@@ -2,7 +2,7 @@
  * style.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Utility tools for styling with the Livre3D engine.
+ * Utility tools for styling with the w3d engine.
  * Part of the Livre project.
  */
 
