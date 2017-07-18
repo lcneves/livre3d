@@ -1,2 +1,2 @@
-# livre3d
-Livre3D rendering engine for the Livre project.
+# w3d
+A framework to build 3D web pages.
