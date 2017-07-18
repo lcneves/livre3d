@@ -23,11 +23,17 @@ module.exports = function(Object3D) {
     }
 
     get dimensions() {
-      return {
+      var bodyDimensions = {
         x: this._dimensions.width,
         y: this._dimensions.width / this._aspect,
         z: this._dimensions.far - this._dimensions.near
       };
+
+      for (let child of this.children) {
+        child.parentDimensions = bodyDimensions;
+      }
+
+      return bodyDimensions;
     }
 
     set aspectRatio(value) {
