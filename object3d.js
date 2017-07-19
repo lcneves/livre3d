@@ -128,9 +128,9 @@ module.exports = function (theme, options) {
   }
 
   function updateStretchedDimensions (object) {
-    if (!object.parentDimensions) {
+    if (!object.containerDimensions) {
       if (object._parent) {
-        object.parentDimensions = object._parent.dimensions;
+        object.containerDimensions = object._parent.dimensions;
       }
       else {
         return object.stretchedDimensions = object.dimensions;
@@ -147,17 +147,17 @@ module.exports = function (theme, options) {
 
     switch (display) {
       case 'plane':
-        dimensions.x = object.parentDimensions.x;
-        dimensions.y = object.parentDimensions.y;
+        dimensions.x = object.containerDimensions.x;
+        dimensions.y = object.containerDimensions.y;
         break;
 
       case 'block':
         if (align === 'stretch') {
           if (parentDirection === 'column') {
-            dimensions.x = object.parentDimensions.x;
+            dimensions.x = object.containerDimensions.x;
           }
           else if (parentDirection === 'row') {
-            dimensions.y = object.parentDimensions.y;
+            dimensions.y = object.containerDimensions.y;
           }
         }
         break;
@@ -176,7 +176,7 @@ module.exports = function (theme, options) {
 
     for (let child of object.children) {
       if(!child._ignoreSize) {
-        let dimensions = child.isw3dObject ?
+        let dimensions = child._isw3dObject ?
           addSpacers(child.updateDimensions(), getSpacers(child, 'margin')) :
           getDimensionsFromBbox(getBboxFromObject(child));
 
@@ -192,25 +192,34 @@ module.exports = function (theme, options) {
       }
     }
 
-    virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
-
+    // TODO: Fix this logic. The container dimensions should be the stretched
+    // dimensions of the parent object.
     for (let child of object.children) {
-      child.parentDimensions = virtualBox;
-      child.updateStretchedDimensions();
+      if (child._isw3dObject) {
+        child.containerDimensions = virtualBox;
+        child.updateStretchedDimensions();
+      }
     }
+
+    virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
 
     return virtualBox;
   }
 
   function getSpacers (object, type) {
-    return {
-      x: units.convert(object, type + '-left', 'world') +
-        units.convert(object, type + '-right', 'world'),
-      y: units.convert(object, type + '-top', 'world') +
-        units.convert(object, type + '-bottom', 'world'),
-      z: units.convert(object, type + '-far', 'world') +
-      units.convert(object, type + '-near', 'world')
-    };
+    if (object._isw3dObject) {
+      return {
+        x: units.convert(object, type + '-left', 'world') +
+          units.convert(object, type + '-right', 'world'),
+        y: units.convert(object, type + '-top', 'world') +
+          units.convert(object, type + '-bottom', 'world'),
+        z: units.convert(object, type + '-far', 'world') +
+          units.convert(object, type + '-near', 'world')
+      };
+    }
+    else {
+      return makeInitialVirtualBox();
+    }
   }
 
   function addSpacers (box, spacers) {
@@ -279,7 +288,7 @@ module.exports = function (theme, options) {
    */
   function makeWorldPosition(childObject, parentObject, offset) {
     const parentBoundaries = parentObject.boundaries;
-    const parentDimensions = parentObject.dimensions;
+    const containerDimensions = parentObject.dimensions;
     const childBoundaries = childObject._isw3dObject ?
       null : getBoundaries(childObject);
 
@@ -367,13 +376,15 @@ module.exports = function (theme, options) {
       }
       else {
         position = makeWorldPosition(child, object, offset);
+        
+        let childTotalDimensions = child._isw3dObject ?
+          addSpacers(child.dimensions, getSpacers(child, 'margin')) :
+          getDimensionsFromBbox(getBboxFromObject(child));
+
         let directionAxis =
           getDirectionAxis(object.getStyle('direction'));
-        offset[directionAxis].distance +=
-          addSpacers(
-            child.dimensions,
-            getSpacers(child, 'margin')
-          )[directionAxis];
+
+        offset[directionAxis].distance += childTotalDimensions[directionAxis];
       }
 
       for (let axis of AXES) {
@@ -459,12 +470,12 @@ module.exports = function (theme, options) {
       resizeChildren(this);
     }
 
-    get parentDimensions() {
-      return this._parentDimensions;
+    get containerDimensions() {
+      return this._containerDimensions;
     }
 
-    set parentDimensions(dimensions) {
-      this._parentDimensions = dimensions;
+    set containerDimensions(dimensions) {
+      this._containerDimensions = dimensions;
     }
 
     updateStretchedDimensions() {
