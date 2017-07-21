@@ -31,6 +31,10 @@ class Background extends THREE.Mesh {
       throw new Error('Invalid object!');
     }
   }
+
+  resize () {
+    this.parent.updateBackground();
+  }
 }
 
 function getDirectionAxis (direction) {
@@ -73,16 +77,6 @@ function makeBboxFromImage (image) {
   };
 }
 
-function isSpriteFromCanvas (object) {
-  return (
-      object.material &&
-      object.material.map &&
-      object.material.map.image &&
-      object.material.map.image.width &&
-      object.material.map.image.height
-  );
-}
-
 function getBboxFromObject (object) {
   if (object.geometry) {
     if (object.geometry.boundingBox === null) {
@@ -99,7 +93,7 @@ function getBboxFromObject (object) {
     return bBox;
   }
 
-  else if (isSpriteFromCanvas(object)) {
+  else if (object._isText2D) {
     return makeBboxFromImage(object.material.map.image);
   }
 
@@ -121,8 +115,8 @@ function getStretchedDimensions (object) {
   const display = object.getStyle('display');
   const parentDirection = object._parent.getStyle('direction');
   const alignSelf = object.getStyle('align-self');
-  const align = alignSelf !== 'initial' ?
-    alignSelf : object._parent.getStyle('align-items');
+  const align = alignSelf !== 'initial'
+    ? alignSelf : object._parent.getStyle('align-items');
 
   var dimensions = object.dimensions;
 
@@ -147,42 +141,38 @@ function getStretchedDimensions (object) {
   return dimensions;
 }
 
-/*
-// TODO: Fix this logic. The container dimensions should be the stretched
-// dimensions of the parent object.
-for (let child of object.children) {
-if (child._isw3dObject) {
-child.containerDimensions = virtualBox;
-child.updateStretchedDimensions();
+function getDimensionsWithMargin (object) {
+  if (object._isw3dObject) {
+    return addSpacers(object.dimensions, getSpacers(object, 'margin'));
+  }
+  else {
+    return object.dimensions;
+  }
 }
-}
-*/
 
 /*
  * Gives the object's world dimensions in a boundary box.
  * Does not include margins; only paddings.
  */
-function getMinimumDimensions (object, direction) {
-  if (!object.isw3dObject) {
+function getDimensions (object) {
+  if (!object._isw3dObject) {
     return getDimensionsFromBbox(getBboxFromObject(object));
   }
 
-  direction = direction || 'column';
+  var direction = object.getStyle('direction');
   var virtualBox = makeInitialVirtualBox();
 
   for (let child of object.children) {
     if (!child._ignoreSize) {
-      let dimensions = child._isw3dObject
-        ? addSpacers(child.updateDimensions(), getSpacers(child, 'margin'))
-        : child.dimensions;
 
       let directionAxis = getDirectionAxis(direction);
       for (let axis of AXES) {
         if (axis === directionAxis) {
-          virtualBox[axis] += dimensions[axis];
+          virtualBox[axis] += child.totalDimensions[axis];
         }
         else {
-          virtualBox[axis] = Math.max(virtualBox[axis], dimensions[axis]);
+          virtualBox[axis] =
+            Math.max(virtualBox[axis], child.totalDimensions[axis]);
         }
       }
     }
@@ -191,6 +181,22 @@ function getMinimumDimensions (object, direction) {
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
 
   return virtualBox;
+}
+
+function getInnerDimensions (object) {
+  return removeSpacers(
+    object.stretchedDimensions, getSpacers(object, 'padding'));
+}
+
+
+function getSpacer (object, direction) {
+  if (object._isw3dObject) {
+    return units.convert(object, 'margin-' + direction, 'world') +
+      units.convert(object, 'padding-' + direction, 'world');
+  }
+  else {
+    return 0;
+  }
 }
 
 function getSpacers (object, type) {
@@ -216,15 +222,11 @@ function addSpacers (box, spacers) {
   return box;
 }
 
-
-function getSpacer (object, direction) {
-  if (object._isw3dObject) {
-    return units.convert(object, 'margin-' + direction, 'world') +
-      units.convert(object, 'padding-' + direction, 'world');
+function removeSpacers (box, spacers) {
+  for (let axis of AXES) {
+    box[axis] -= spacers[axis];
   }
-  else {
-    return 0;
-  }
+  return box;
 }
 
 /*
@@ -247,8 +249,6 @@ function getBoundaries (object) {
     };
   }
   else {
-    var position = new THREE.Vector3();
-    position.setFromMatrixPosition(object.matrixWorld);
     const bbox = getBboxFromObject(object);
     return {
       left: - bbox.min.x,
@@ -274,8 +274,8 @@ function makeInitialPosition () {
  * given its relative position to the parent.
  */
 function makeWorldPosition (childObject, parentObject, offset) {
-  const childBoundaries = childObject._isw3dObject ?
-    null : getBoundaries(childObject);
+  const childBoundaries = childObject._isw3dObject
+    ? null : getBoundaries(childObject);
 
   var position = {};
 
@@ -297,21 +297,6 @@ function makeWorldPosition (childObject, parentObject, offset) {
   return position;
 }
 
-function scaleSprite (sprite) {
-  var width = sprite.material.map.image.width;
-  var aspect = width / sprite.material.map.image.height;
-  var scaleFactor = windowUtils.getFontScaleFactor(width);
-
-  sprite.scale.set(scaleFactor, scaleFactor / aspect, 1);
-}
-
-function isText3D (object) {
-  return(
-      object.geometry &&
-      object.geometry.type === 'TextGeometry'
-  );
-}
-
 function updateBackground (object) {
   for (let index = 0; index < object.children.length; index++) {
     let child = object.children[index];
@@ -323,23 +308,6 @@ function updateBackground (object) {
       break;
     }
   }
-}
-
-function resizeChildren (object) {
-  for (let child of object.children) {
-    if (child._isw3dObject) {
-      child.resizeChildren();
-    }
-
-    if (isText3D(child)) {
-      child._resize(windowUtils.worldToPixels);
-    }
-    else if (isSpriteFromCanvas(child)) {
-      scaleSprite(child);
-    }
-  }
-
-  updateBackground(object);
 }
 
 function positionChildren (object) {
@@ -356,19 +324,15 @@ function positionChildren (object) {
           child,
           object,
           makeInitialPosition()
-          );
+      );
     }
     else {
       position = makeWorldPosition(child, object, offset);
 
-      let childTotalDimensions = child._isw3dObject ?
-        addSpacers(child.dimensions, getSpacers(child, 'margin')) :
-        getDimensionsFromBbox(getBboxFromObject(child));
-
       let directionAxis =
         getDirectionAxis(object.getStyle('direction'));
 
-      offset[directionAxis].distance += childTotalDimensions[directionAxis];
+      offset[directionAxis].distance += child.totalDimensions[directionAxis];
     }
 
     for (let axis of AXES) {
@@ -393,7 +357,16 @@ function getFontSize (object) {
 
 function forceUpdate (object, property) {
   if (object.hasOwnProperty(property)) {
-    object[property] = undefined;
+    delete object[property];
+  }
+}
+
+function importPrototype (object, prototype) {
+  for (let key in prototype) {
+    let descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+    if (descriptor !== undefined) {
+      Object.defineProperty(object, key, descriptor);
+    }
   }
 }
 
@@ -401,13 +374,13 @@ Object.assign(module.exports, {
   Background: Background,
   forceUpdate: forceUpdate,
   getBoundaries: getBoundaries,
+  getDimensions: getDimensions,
+  getDimensionsWithMargin: getDimensionsWithMargin,
   getDirectionAxis: getDirectionAxis,
   getFontSize: getFontSize,
-  getMinimumDimensions: getMinimumDimensions,
+  getInnerDimensions: getInnerDimensions,
   getStretchedDimensions: getStretchedDimensions,
-  isText3D: isText3D,
+  importPrototype: importPrototype,
   positionChildren: positionChildren,
-  resizeChildren: resizeChildren,
-  scaleSprite: scaleSprite,
   updateBackground: updateBackground
 });

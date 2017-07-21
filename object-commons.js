@@ -11,7 +11,7 @@
 const objectUtils = require('./object-utils.js');
 
 module.exports = {
-  setWorldPosition: function setWorldPosition (parentObject, offset) {
+  setWorldPosition (parentObject, offset) {
     parentObject = parentObject || this.parent;
     offset = offset || objectUtils.makeInitialPosition();
 
@@ -21,36 +21,67 @@ module.exports = {
         this.position[prop] = position[prop];
       }
     }
-  }
-};
+  },
 
-Object.defineProperty(module.exports, 'w3dNeedsUpdate', {
-  set: function (property) {
+  resize () {
+    throw new Error(
+      'Resize function has not been overridden by implementation!'
+    );
+  },
+
+  w3dAllNeedUpdate () {
+    this.w3dNeedsUpdate = [
+      'dimensions',
+      'innerDimensions',
+      'totalDimensions',
+      'stretchedDimensions',
+      'boundaries'
+    ];
+  },
+
+  set w3dNeedsUpdate (property) {
     if (typeof property === 'string') {
       objectUtils.forceUpdate(this, property);
     }
-    else if (typeof property === 'object' && property.isArray) {
-      for (let prop in property) {
+    else if (Array.isArray(property)) {
+      for (let prop of property) {
         objectUtils.forceUpdate(this, prop);
       }
     }
-  }
-});
+  },
 
-Object.defineProperty(module.exports, 'dimensions', {
-  get: function () {
+  get dimensions () {
     if (!this._dimensions) {
-      this._dimensions = objectUtils.getMinimumDimensions(this);
+      this._dimensions = objectUtils.getDimensions(this);
     }
     return this._dimensions;
-  }
-});
+  },
 
-Object.defineProperty(module.exports, 'boundaries', {
-  get: function () {
+  get innerDimensions () {
+    if (!this._innerDimensions) {
+      this._innerDimensions = objectUtils.getInnerDimensions(this);
+    }
+    return this._innerDimensions;
+  },
+
+  get totalDimensions () {
+    if (!this._totalDimensions) {
+      this._totalDimensions = objectUtils.getDimensionsWithMargin(this);
+    }
+    return this._totalDimensions;
+  },
+
+  get containerDimensions () {
+    return this._parent
+      ? this._parent.innerDimensions
+      : this.dimensions;
+  },
+
+  get boundaries () {
     if (!this._boundaries) {
       this._boundaries = objectUtils.getBoundaries(this);
     }
     return this._boundaries;
   }
-});
+};
+

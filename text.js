@@ -10,6 +10,8 @@
 const THREE = require('three');
 // const fontCache = require('./font-cache.js');
 const windowUtils = require('./window-utils.js');
+const objectUtils = require('./object-utils.js');
+const objectCommons = require('./object-commons.js');
 const units = require('./units.js');
 
 const CURVE_SEGMENTS = 12;
@@ -17,8 +19,46 @@ const CURVE_SEGMENTS = 12;
 class TextMesh extends THREE.Mesh {
   constructor (geometry, material) {
     super(geometry, material);
+
+    this._worldToPixelsRatio = windowUtils.worldToPixels;
+    this._isText3D = true;
   }
 }
+
+const textMeshPrototype = {
+  resize () {
+    var scaleFactor = this._worldToPixelsRatio / windowUtils.worldToPixels;
+    this.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    this.w3dAllNeedUpdate();
+  }
+};
+
+objectUtils.importPrototype(TextMesh.prototype, objectCommons);
+objectUtils.importPrototype(TextMesh.prototype, textMeshPrototype);
+
+class TextSprite extends THREE.Sprite {
+  constructor (spriteMaterial) {
+    super(spriteMaterial);
+
+    this._isText2D = true;
+  }
+}
+
+const textSpritePrototype = {
+  resize () {
+    var width = this.material.map.image.width;
+    var aspect = width / this.material.map.image.height;
+    var scaleFactor = windowUtils.getFontScaleFactor(width);
+
+    this.scale.set(scaleFactor, scaleFactor / aspect, 1);
+
+    this.w3dAllNeedUpdate();
+  }
+}
+
+objectUtils.importPrototype(TextSprite.prototype, objectCommons);
+objectUtils.importPrototype(TextSprite.prototype, textSpritePrototype);
 
 function getColorString(num) {
   const filling = '000000';
@@ -26,11 +66,6 @@ function getColorString(num) {
   hexString = filling + hexString;
   hexString = '#' + hexString.slice(-6);
   return hexString;
-}
-
-function resizeMesh (newWorldToPixelsRatio) {
-  var scaleFactor = this._worldToPixelsRatio / newWorldToPixelsRatio;
-  this.scale.set(scaleFactor, scaleFactor, scaleFactor);
 }
 
 module.exports = function(fonts) {
@@ -59,10 +94,6 @@ module.exports = function(fonts) {
         );
         var mesh = new TextMesh(geometry, material);
 
-        // Needed to scale when screen width changes
-        // TODO: Move this inside the function constructor
-        mesh._worldToPixelsRatio = windowUtils.worldToPixels;
-        mesh._resize = resizeMesh;
         resolve(mesh);
       });
     });
@@ -121,7 +152,7 @@ module.exports = function(fonts) {
       texture.minFilter = THREE.LinearFilter; // NearestFilter;
 
       spriteMaterial = new THREE.SpriteMaterial({ map : texture });
-      sprite = new THREE.Sprite(spriteMaterial);
+      sprite = new TextSprite(spriteMaterial);
 
       resolve(sprite);
 

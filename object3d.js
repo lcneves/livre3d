@@ -15,7 +15,7 @@ module.exports = function (theme, options) {
   theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
   const objectUtils = require('./object-utils.js');
-  const objectCommons = require('object-commons.js');
+  const objectCommons = require('./object-commons.js');
   const messages = require('./messages.js');
 
   class Object3D extends THREE.Object3D {
@@ -44,13 +44,13 @@ module.exports = function (theme, options) {
       }
 
       this._isw3dObject = true;
-
-      Object.assign(this.prototype, objectCommons);
     }
+  }
 
+  const object3DPrototype = {
     get fontSize () {
       return objectUtils.getFontSize(this);
-    }
+    },
 
     getStyle (property) {
       if (this._style[property] !== undefined) {
@@ -62,20 +62,20 @@ module.exports = function (theme, options) {
       else {
         return undefined;
       }
-    }
+    },
 
-    resizeChildren () {
-      objectUtils.resizeChildren(this);
-      this.w3dNeedsUpdate = [
-        'dimensions', 'stretchedDimensions', 'boundaries'
-      ];
-    }
+    resize () {
+      for (let child of this.children) {
+        child.resize();
+      }
 
-    get containerDimensions () {
-      return this._parent
-        ? this._parent.stretchedDimensions
-        : this.dimensions;
-    }
+      this.w3dAllNeedUpdate();
+      this.updateBackground();
+    },
+
+    updateBackground () {
+      objectUtils.updateBackground(this);
+    },
 
     get stretchedDimensions () {
       if (!this._stretchedDimensions) {
@@ -84,16 +84,16 @@ module.exports = function (theme, options) {
           : this.dimensions;
       }
       return this._stretchedDimensions;
-    }
+    },
 
     positionChildren () {
       objectUtils.positionChildren(this);
-    }
+    },
 
     arrangeChildren () {
-      this.resizeChildren();
+      this.resize();
       this.positionChildren();
-    }
+    },
 
     getProperty (property) {
       if (this._ht3d) {
@@ -102,7 +102,7 @@ module.exports = function (theme, options) {
       else {
         return undefined;
       }
-    }
+    },
 
     setProperty (property, value) {
       if (property && typeof property === 'string' && value) {
@@ -112,7 +112,7 @@ module.exports = function (theme, options) {
       else {
         throw new Error('Invalid inputs!');
       }
-    }
+    },
 
     makeStyle () {
       this._style = style.make(theme.stylesheets, this);
@@ -120,13 +120,13 @@ module.exports = function (theme, options) {
       if (this._style['background-color']) {
         this.add(new objectUtils.Background(this));
       }
-    }
+    },
 
     makeText () {
       if (this.getProperty('text') !== undefined) {
         text.make(this).then(newText => this.add(newText, { rearrange: true }));
       }
-    }
+    },
 
     // Overrides THREE.Object3D's add function
     add (object, options) {
@@ -135,18 +135,18 @@ module.exports = function (theme, options) {
       object._parent = this;
 
       if (options && options.rearrange) {
-        this.w3dNeedsUpdate = [
-          'dimensions', 'stretchedDimensions', 'boundaries'
-        ];
 
         var topObject = this;
-        while (topObject.parent && topObject.parent._isw3dObject) {
-          topObject = topObject.parent;
+        while (topObject._parent && topObject._parent._isw3dObject) {
+          topObject = topObject._parent;
         }
         messages.setMessage('needsArrange', topObject);
       }
     }
-  }
+  };
+
+  objectUtils.importPrototype(Object3D.prototype, objectCommons);
+  objectUtils.importPrototype(Object3D.prototype, object3DPrototype);
 
   return Object3D;
 };

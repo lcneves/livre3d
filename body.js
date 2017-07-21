@@ -2,7 +2,7 @@
 
 module.exports = function(Object3D) {
   class Body extends Object3D {
-    constructor(aspectRatio, dimensions) {
+    constructor (aspectRatio, dimensions) {
       super();
       this._aspect = aspectRatio;
       this._dimensions = dimensions;
@@ -11,7 +11,7 @@ module.exports = function(Object3D) {
       this.makeStyle();
     }
 
-    get boundaries() {
+    get boundaries () {
       return {
         left: 0,
         right: this._dimensions.width,
@@ -22,7 +22,7 @@ module.exports = function(Object3D) {
       };
     }
 
-    get dimensions() {
+    get dimensions () {
       var bodyDimensions = {
         x: this._dimensions.width,
         y: this._dimensions.width / this._aspect,
@@ -36,9 +36,13 @@ module.exports = function(Object3D) {
       return bodyDimensions;
     }
 
-    set aspectRatio(value) {
+    set aspectRatio (value) {
       this._aspect = value;
     }
+
+    set w3dNeedsUpdate(value) {}
+
+    w3dAllNeedUpdate() {}
   }
 
   return Body;
