@@ -9,23 +9,24 @@
 'use strict';
 
 module.exports = function (theme, options) {
-
   const THREE = require('three');
   const ht3d = require('./ht3d.js');
   const style = require('./style.js')(options);
   theme.resources = style.loadResources(theme.stylesheets);
   const text = require('./text.js')(theme.resources.fonts);
   const objectUtils = require('./object-utils.js');
+  const objectCommons = require('object-commons.js');
+  const messages = require('./messages.js');
 
   class Object3D extends THREE.Object3D {
-    constructor(options) {
+    constructor (options) {
       super();
 
       options = (options && typeof options === 'object') ? options : {};
 
       // This passes a parameter to the HT3D parser that will be incorporated
       // in the resulting Object3D as the `_parent` property. It is necessary
-      // for inheritance of style properties without messing with THREE's 
+      // for inheritance of style properties without messing with THREE's
       // `parent` property.
       var parentObject = options.setParent ? options.setParent : null;
 
@@ -44,26 +45,14 @@ module.exports = function (theme, options) {
 
       this._isw3dObject = true;
 
+      Object.assign(this.prototype, objectCommons);
     }
 
-    get dimensions() {
-      return this._dimensions ?
-        this._dimensions : this.updateDimensions();
+    get fontSize () {
+      return objectUtils.getFontSize(this);
     }
 
-    updateDimensions() {
-      return this._dimensions = updateDimensions(this);
-    }
-
-    get boundaries() {
-      return getBoundaries(this);
-    }
-
-    get fontSize() {
-      return getFontSize(this);
-    }
-
-    getStyle(property) {
+    getStyle (property) {
       if (this._style[property] !== undefined) {
         return this._style[property];
       }
@@ -75,55 +64,38 @@ module.exports = function (theme, options) {
       }
     }
 
-    resizeChildren() {
-      resizeChildren(this);
+    resizeChildren () {
+      objectUtils.resizeChildren(this);
+      this.w3dNeedsUpdate = [
+        'dimensions', 'stretchedDimensions', 'boundaries'
+      ];
     }
 
-    get containerDimensions() {
-      return this._containerDimensions;
+    get containerDimensions () {
+      return this._parent
+        ? this._parent.stretchedDimensions
+        : this.dimensions;
     }
 
-    set containerDimensions(dimensions) {
-      this._containerDimensions = dimensions;
+    get stretchedDimensions () {
+      if (!this._stretchedDimensions) {
+        this._stretchedDimensions = this._parent
+          ? objectUtils.getStretchedDimensions(this)
+          : this.dimensions;
+      }
+      return this._stretchedDimensions;
     }
 
-    updateStretchedDimensions() {
-      return this._parent ?
-        this._stretchedDimensions = updateStretchedDimensions(this) :
-        this.dimensions;
+    positionChildren () {
+      objectUtils.positionChildren(this);
     }
 
-    get stretchedDimensions() {
-      return this._stretchedDimensions ?
-        this._stretchedDimensions : this.updateStretchedDimensions();
-    }
-
-    set stretchedDimensions(dimensions) {
-      this._stretchedDimensions = dimensions;
-    }
-
-    positionChildren() {
-      positionChildren(this);
-    }
-
-    arrangeChildren() {
+    arrangeChildren () {
       this.resizeChildren();
       this.positionChildren();
     }
 
-    setWorldPosition(parentObject, offset) {
-      parentObject = parentObject || this.parent;
-      offset = offset || makeInitialPosition();
-
-      var position = makeWorldPosition(this, parentObject, offset);
-      for (let prop in position) {
-        if (position.hasOwnProperty(prop)) {
-          this.position[prop] = position[prop];
-        }
-      }
-    }
-
-    getProperty(property) {
+    getProperty (property) {
       if (this._ht3d) {
         return this._ht3d[property];
       }
@@ -132,7 +104,7 @@ module.exports = function (theme, options) {
       }
     }
 
-    setProperty(property, value) {
+    setProperty (property, value) {
       if (property && typeof property === 'string' && value) {
         this._ht3d = this._ht3d ? this._ht3d : {};
         this._ht3d[property] = value;
@@ -142,27 +114,31 @@ module.exports = function (theme, options) {
       }
     }
 
-    makeStyle() {
+    makeStyle () {
       this._style = style.make(theme.stylesheets, this);
 
       if (this._style['background-color']) {
-        this.add(new Background(this));
+        this.add(new objectUtils.Background(this));
       }
     }
 
-    makeText() {
+    makeText () {
       if (this.getProperty('text') !== undefined) {
         text.make(this).then(newText => this.add(newText, { rearrange: true }));
       }
     }
 
     // Overrides THREE.Object3D's add function
-    add(object, options) {
+    add (object, options) {
       THREE.Object3D.prototype.add.call(this, object);
 
       object._parent = this;
 
       if (options && options.rearrange) {
+        this.w3dNeedsUpdate = [
+          'dimensions', 'stretchedDimensions', 'boundaries'
+        ];
+
         var topObject = this;
         while (topObject.parent && topObject.parent._isw3dObject) {
           topObject = topObject.parent;

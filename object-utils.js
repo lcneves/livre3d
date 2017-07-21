@@ -7,20 +7,16 @@
 
 'use strict';
 
-
 const THREE = require('three');
 
 const windowUtils = require('./window-utils.js');
 const units = require('./units.js');
-const messages = require('./messages.js');
 
 const AXES = ['x', 'y', 'z'];
 
-
 class Background extends THREE.Mesh {
-  constructor(object) {
-    if (object && object._isw3dObject) 
-    {
+  constructor (object) {
+    if (object && object._isw3dObject) {
       var dimensions = object.stretchedDimensions;
       var material = new THREE.MeshPhongMaterial({
         color: object.getStyle('background-color')
@@ -37,7 +33,7 @@ class Background extends THREE.Mesh {
   }
 }
 
-function getDirectionAxis(direction) {
+function getDirectionAxis (direction) {
   var directionAxis;
   switch (direction) {
     case 'row':
@@ -53,7 +49,7 @@ function getDirectionAxis(direction) {
   return directionAxis;
 }
 
-function getDimensionsFromBbox(bbox) {
+function getDimensionsFromBbox (bbox) {
   return {
     x: bbox.max.x - bbox.min.x,
     y: bbox.max.y - bbox.min.y,
@@ -61,19 +57,19 @@ function getDimensionsFromBbox(bbox) {
   };
 }
 
-function makeBboxFromImage(image) {
+function makeBboxFromImage (image) {
   const worldToPixels = windowUtils.worldToPixels;
   return {
     min: {
       x: - image.width / (2 * worldToPixels),
-        y: - image.height / (2 * worldToPixels),
-        z: 0
+      y: - image.height / (2 * worldToPixels),
+      z: 0
     },
-      max: {
-        x: image.width / (2 * worldToPixels),
-        y: image.height / (2 * worldToPixels),
-        z: 0
-      }
+    max: {
+      x: image.width / (2 * worldToPixels),
+      y: image.height / (2 * worldToPixels),
+      z: 0
+    }
   };
 }
 
@@ -84,10 +80,10 @@ function isSpriteFromCanvas (object) {
       object.material.map.image &&
       object.material.map.image.width &&
       object.material.map.image.height
-      );
+  );
 }
 
-function getBboxFromObject(object) {
+function getBboxFromObject (object) {
   if (object.geometry) {
     if (object.geometry.boundingBox === null) {
       object.geometry.computeBoundingBox();
@@ -122,15 +118,6 @@ function makeInitialVirtualBox () {
 }
 
 function getStretchedDimensions (object) {
-  if (!object.containerDimensions) {
-    if (object._parent) {
-      object.containerDimensions = object._parent.dimensions;
-    }
-    else {
-      return object.stretchedDimensions = object.dimensions;
-    }
-  }
-
   const display = object.getStyle('display');
   const parentDirection = object._parent.getStyle('direction');
   const alignSelf = object.getStyle('align-self');
@@ -157,7 +144,7 @@ function getStretchedDimensions (object) {
       break;
   }
 
-  return object.stretchedDimensions = dimensions;
+  return dimensions;
 }
 
 /*
@@ -175,16 +162,21 @@ child.updateStretchedDimensions();
  * Gives the object's world dimensions in a boundary box.
  * Does not include margins; only paddings.
  */
-function getMinimumDimensions (object) {
+function getMinimumDimensions (object, direction) {
+  if (!object.isw3dObject) {
+    return getDimensionsFromBbox(getBboxFromObject(object));
+  }
+
+  direction = direction || 'column';
   var virtualBox = makeInitialVirtualBox();
 
   for (let child of object.children) {
-    if(!child._ignoreSize) {
-      let dimensions = child._isw3dObject ?
-        addSpacers(child.updateDimensions(), getSpacers(child, 'margin')) :
-        getDimensionsFromBbox(getBboxFromObject(child));
+    if (!child._ignoreSize) {
+      let dimensions = child._isw3dObject
+        ? addSpacers(child.updateDimensions(), getSpacers(child, 'margin'))
+        : child.dimensions;
 
-      let directionAxis = getDirectionAxis(options.direction);
+      let directionAxis = getDirectionAxis(direction);
       for (let axis of AXES) {
         if (axis === directionAxis) {
           virtualBox[axis] += dimensions[axis];
@@ -242,16 +234,16 @@ function getSpacer (object, direction) {
  * - the y axis grows to the top;
  * - the z axis grows to the near.
  */
-function getBoundaries(object) {
+function getBoundaries (object) {
   if (object._isw3dObject) {
     var dimensions = object.dimensions;
     return {
       left: 0,
-        right: dimensions.x,
-        top: dimensions.y,
-        bottom: 0,
-        far: 0,
-        near: dimensions.z
+      right: dimensions.x,
+      top: dimensions.y,
+      bottom: 0,
+      far: 0,
+      near: dimensions.z
     };
   }
   else {
@@ -260,16 +252,16 @@ function getBoundaries(object) {
     const bbox = getBboxFromObject(object);
     return {
       left: - bbox.min.x,
-        right: bbox.max.x,
-        top: bbox.max.y,
-        bottom: - bbox.min.y,
-        far: - bbox.min.z,
-        near: bbox.max.z
+      right: bbox.max.x,
+      top: bbox.max.y,
+      bottom: - bbox.min.y,
+      far: - bbox.min.z,
+      near: bbox.max.z
     };
   }
 }
 
-function makeInitialPosition() {
+function makeInitialPosition () {
   return {
     x: { reference: 'left', distance: 0 },
     y: { reference: 'top', distance: 0 },
@@ -281,9 +273,7 @@ function makeInitialPosition() {
  * Returns the world position that the child should have
  * given its relative position to the parent.
  */
-function makeWorldPosition(childObject, parentObject, offset) {
-  const parentBoundaries = parentObject.boundaries;
-  const containerDimensions = parentObject.dimensions;
+function makeWorldPosition (childObject, parentObject, offset) {
   const childBoundaries = childObject._isw3dObject ?
     null : getBoundaries(childObject);
 
@@ -337,7 +327,6 @@ function updateBackground (object) {
 
 function resizeChildren (object) {
   for (let child of object.children) {
-
     if (child._isw3dObject) {
       child.resizeChildren();
     }
@@ -402,9 +391,15 @@ function getFontSize (object) {
   }
 }
 
+function forceUpdate (object, property) {
+  if (object.hasOwnProperty(property)) {
+    object[property] = undefined;
+  }
+}
 
 Object.assign(module.exports, {
   Background: Background,
+  forceUpdate: forceUpdate,
   getBoundaries: getBoundaries,
   getDirectionAxis: getDirectionAxis,
   getFontSize: getFontSize,
@@ -415,5 +410,4 @@ Object.assign(module.exports, {
   resizeChildren: resizeChildren,
   scaleSprite: scaleSprite,
   updateBackground: updateBackground
-};
-
+});
