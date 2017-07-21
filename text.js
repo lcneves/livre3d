@@ -1,11 +1,24 @@
+/*
+ * text.js
+ * Copyright 2017 Lucas Neves <lcneves@gmail.com>
+ *
+ * Makes 2D and 3D text for the w3d engine.
+ */
+
 'use strict';
 
 const THREE = require('three');
-const fontCache = require('./font-cache.js');
+// const fontCache = require('./font-cache.js');
 const windowUtils = require('./window-utils.js');
 const units = require('./units.js');
 
 const CURVE_SEGMENTS = 12;
+
+class TextMesh extends THREE.Mesh {
+  constructor (geometry, material) {
+    super(geometry, material);
+  }
+}
 
 function getColorString(num) {
   const filling = '000000';
@@ -44,9 +57,10 @@ module.exports = function(fonts) {
         var material = new THREE.MeshPhongMaterial(
           { color: object.getStyle('color') }
         );
-        var mesh = new THREE.Mesh(geometry, material);
+        var mesh = new TextMesh(geometry, material);
 
         // Needed to scale when screen width changes
+        // TODO: Move this inside the function constructor
         mesh._worldToPixelsRatio = windowUtils.worldToPixels;
         mesh._resize = resizeMesh;
         resolve(mesh);
@@ -61,8 +75,8 @@ module.exports = function(fonts) {
     return new Promise(resolve => {
       const fontSize = units.convert(object, 'font-size');
 
-      var ctx, texture, sprite, spriteMaterial, 
-        canvas = document.createElement('canvas');
+      var ctx, texture, sprite, spriteMaterial,
+          canvas = document.createElement('canvas');
 
       ctx = canvas.getContext('2d');
       ctx.font = fontSize + 'px ' + object.getStyle('font-family');
@@ -140,4 +154,3 @@ module.exports = function(fonts) {
     make: make
   };
 };
-
