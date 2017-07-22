@@ -10,6 +10,7 @@
 const THREE = require('three');
 
 const windowUtils = require('./window-utils.js');
+const objectCommons = require('./object-commons.js');
 const units = require('./units.js');
 
 const AXES = ['x', 'y', 'z'];
@@ -31,11 +32,35 @@ class Background extends THREE.Mesh {
       throw new Error('Invalid object!');
     }
   }
-
-  resize () {
-    this.parent.updateBackground();
-  }
 }
+
+const backgroundPrototype = {
+  resize () {},
+  w3dAllNeedUpdate () {},
+  set w3dNeedsUpdate (property) {},
+  get dimensions () {
+    return makeInitialVirtualBox();
+  },
+  get innerDimensions () {
+    return this.dimensions;
+  },
+  get totalDimensions () {
+    return this.dimensions;
+  },
+  get boundaries () {
+    return {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      far: 0,
+      near: 0
+    };
+  }
+};
+
+importPrototype(Background.prototype, objectCommons);
+importPrototype(Background.prototype, backgroundPrototype);
 
 function getDirectionAxis (direction) {
   var directionAxis;
@@ -321,9 +346,9 @@ function positionChildren (object) {
 
     if (child._isBackground) {
       position = makeWorldPosition(
-          child,
-          object,
-          makeInitialPosition()
+        child,
+        object,
+        makeInitialPosition()
       );
     }
     else {
@@ -356,6 +381,7 @@ function getFontSize (object) {
 }
 
 function forceUpdate (object, property) {
+  property = '_' + property;
   if (object.hasOwnProperty(property)) {
     delete object[property];
   }

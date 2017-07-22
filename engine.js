@@ -8,7 +8,7 @@
 'use strict';
 
 module.exports = function (options) {
-  
+
 
   const THREE = require('three');
 
@@ -30,8 +30,7 @@ module.exports = function (options) {
 
   windowUtils.init(theme.worldWidth, window.innerWidth, window.innerHeight);
 
-  var scene,
-      lights;
+  var scene;
 
   var camera = new Camera(
     window.innerWidth / window.innerHeight,
@@ -57,7 +56,7 @@ module.exports = function (options) {
     if (camera) {
       camera.aspectRatio = aspectRatio;
     }
-    
+
     if (body) {
       body.aspectRatio = aspectRatio;
       messages.setMessage('needsArrange', body);

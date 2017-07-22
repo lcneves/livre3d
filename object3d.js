@@ -64,12 +64,22 @@ module.exports = function (theme, options) {
       }
     },
 
+    w3dUpdateChildren () {
+      this.w3dAllNeedUpdate();
+      for (let child of this.children) {
+        if (child._isw3dObject) {
+          child.w3dUpdateChildren();
+        }
+      }
+    },
+
     resize () {
+      this.w3dUpdateChildren();
+
       for (let child of this.children) {
         child.resize();
       }
 
-      this.w3dAllNeedUpdate();
       this.updateBackground();
     },
 

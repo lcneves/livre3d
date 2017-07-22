@@ -55,7 +55,7 @@ const textSpritePrototype = {
 
     this.w3dAllNeedUpdate();
   }
-}
+};
 
 objectUtils.importPrototype(TextSprite.prototype, objectCommons);
 objectUtils.importPrototype(TextSprite.prototype, textSpritePrototype);
@@ -73,14 +73,14 @@ module.exports = function(fonts) {
   function makeText3D(object) {
     const text = object._ht3d.text;
 
-//    var wordStringArray = text.split(' ');
+    //    var wordStringArray = text.split(' ');
     var fontPromise = fonts[
       object.getStyle('font-family') + '-' + object.getStyle('font-weight')
     ].dataPromise;
 
     return new Promise(resolve => {
       fontPromise.then(font => {
-//        var geometry = fontCache.makeWordGeometry(text, {
+        //        var geometry = fontCache.makeWordGeometry(text, {
 
         var geometry = new THREE.TextGeometry(text, {
           font: font,
