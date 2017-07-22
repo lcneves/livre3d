@@ -315,8 +315,6 @@ function makeWorldPosition (childObject, parentObject, offset) {
       case 'near':
         position[axis] = - position[axis];
         break;
-      default:
-        break;
     }
   }
   return position;

@@ -22,6 +22,11 @@ function parse(html, parentObject, Object3D) {
     array[index] = array[index].trim();
   }
 
+  function makeInitialProperties (object) {
+    object.setProperty('class', '');
+    object.setProperty('id', '');
+  }
+
   function getTagName(line) {
     var re = /^<(\w+)/gi;
     var results = re.exec(line);
@@ -60,12 +65,13 @@ function parse(html, parentObject, Object3D) {
     if (tagName) {
       var object = new Object3D();
       object._parent = parentObject;
+      makeInitialProperties(object);
       object.setProperty('tag', tagName);
 
       for (let prop of props) {
         object.setProperty(prop.name, prop.value);
       }
-      
+
       object.makeStyle();
 
       if (currentObject) {
@@ -98,4 +104,3 @@ function parse(html, parentObject, Object3D) {
 }
 
 module.exports.parse = parse;
-

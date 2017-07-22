@@ -7,7 +7,11 @@ module.exports = function(Object3D) {
       this._aspect = aspectRatio;
       this._bodyDimensions = dimensions;
 
-      this._ht3d = { tag: 'body' };
+      this._ht3d = {
+        tag: 'body',
+        class: '',
+        id: ''
+      };
       this.makeStyle();
     }
 

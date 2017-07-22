@@ -115,7 +115,7 @@ module.exports = function (theme, options) {
     },
 
     setProperty (property, value) {
-      if (property && typeof property === 'string' && value) {
+      if (property && typeof property === 'string') {
         this._ht3d = this._ht3d ? this._ht3d : {};
         this._ht3d[property] = value;
       }
