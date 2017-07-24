@@ -1,6 +1,6 @@
 {
   "name": "w3d",
-  "version": "0.0.58",
+  "version": "0.0.59",
   "description": "Framework to create 3D web pages.",
   "main": "index.js",
   "scripts": {
