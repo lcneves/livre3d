@@ -8,11 +8,12 @@
 'use strict';
 
 const THREE = require('three');
-// const fontCache = require('./font-cache.js');
+const fontLoader = new THREE.FontLoader();
 const windowUtils = require('./window-utils.js');
 const objectUtils = require('./object-utils.js');
 const objectCommons = require('./object-commons.js');
 const units = require('./units.js');
+const textUtils = require('./text-utils.js');
 
 const CURVE_SEGMENTS = 12;
 
@@ -37,40 +38,9 @@ const textMeshPrototype = {
 objectUtils.importPrototype(TextMesh.prototype, objectCommons);
 objectUtils.importPrototype(TextMesh.prototype, textMeshPrototype);
 
-class TextSprite extends THREE.Sprite {
-  constructor (spriteMaterial) {
-    super(spriteMaterial);
+module.exports = function (fonts) {
 
-    this._isText2D = true;
-  }
-}
-
-const textSpritePrototype = {
-  resize () {
-    var width = this.material.map.image.width;
-    var aspect = width / this.material.map.image.height;
-    var scaleFactor = windowUtils.getFontScaleFactor(width);
-
-    this.scale.set(scaleFactor, scaleFactor / aspect, 1);
-
-    this.w3dAllNeedUpdate();
-  }
-};
-
-objectUtils.importPrototype(TextSprite.prototype, objectCommons);
-objectUtils.importPrototype(TextSprite.prototype, textSpritePrototype);
-
-function getColorString(num) {
-  const filling = '000000';
-  var hexString = num.toString(16);
-  hexString = filling + hexString;
-  hexString = '#' + hexString.slice(-6);
-  return hexString;
-}
-
-module.exports = function(fonts) {
-
-  function makeText3D(object) {
+  function makeText3D (object) {
     const text = object._ht3d.text;
 
     //    var wordStringArray = text.split(' ');
@@ -80,7 +50,9 @@ module.exports = function(fonts) {
 
     return new Promise(resolve => {
       fontPromise.then(font => {
-        //        var geometry = fontCache.makeWordGeometry(text, {
+        if (!font.isFont) {
+          fontLoader.parse(font);
+        }
 
         var geometry = new THREE.TextGeometry(text, {
           font: font,
@@ -119,43 +91,19 @@ module.exports = function(fonts) {
       // after setting the canvas width/height we have to re-set font to apply!?
       // looks like ctx reset
       ctx.font = fontSize + 'px ' + object.getStyle('font-family');
-      ctx.fillStyle = getColorString(object.getStyle('color'));
-      ctx.fillText(text, 0, fontSize, canvas.width);
-
-      /*
-       * Mesh-based solution. Creates a transparent mesh.
-       *
-      // Canvas will be black with white text. It will be used as an
-      // alpha map.
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       ctx.fillStyle = 'white';
-
-      var material = new THREE.MeshBasicMaterial({
-        color: style['color'],
-        alphaMap: texture,
-        transparent: true
-      });
-
-      var geometry = new THREE.PlaneGeometry(
-        fontScaleFactor, fontScaleFactor / canvasRatio
-      );
-
-      var mesh = new THREE.Mesh(geometry, material);
-
-      resolve(mesh);
-
-      */
+      ctx.fillText(text, 0, fontSize, canvas.width);
 
       texture = new THREE.CanvasTexture(canvas);
       texture.minFilter = THREE.LinearFilter; // NearestFilter;
 
-      spriteMaterial = new THREE.SpriteMaterial({ map : texture });
+      spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        color: object.getStyle('color')
+      });
       sprite = new TextSprite(spriteMaterial);
 
       resolve(sprite);
-
     });
   }
 

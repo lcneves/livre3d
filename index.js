@@ -2,16 +2,14 @@
  * index.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Entry point for the Livre3D engine.
- * Initializes the Livre client with the engine contained in this directory.
+ * Entry point for the w3d engine.
+ * Initializes the client with the engine contained in this directory.
  *
  */
 
 'use strict';
 
-module.exports.Object3D = require('./object3d.js');
-
-module.exports.init = function (theme) {
+module.exports = function (theme) {
 
   const engine = require('./engine.js')(theme);
 
@@ -19,4 +17,3 @@ module.exports.init = function (theme) {
     engine: engine
   });
 };
-

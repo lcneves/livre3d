@@ -13,7 +13,7 @@ var _windowWidth = undefined;
 var _windowHeight = undefined;
 
 module.exports = {
-  init: function (worldWidth, windowWidth, windowHeight) {
+  init (worldWidth, windowWidth, windowHeight) {
     _worldWidth = worldWidth;
     _windowWidth = windowWidth;
     _windowHeight = windowHeight;
@@ -50,10 +50,9 @@ module.exports = {
     }
   },
 
-  // A text sprite multiplied by this value result in the proper size
+  // A text sprite multiplied by this value results in the proper size
   // when text is placed at z === 0 (far)
-  getFontScaleFactor: function getFontScaleFactor (canvasWidth) {
+  getFontScaleFactor (canvasWidth) {
     return canvasWidth / this.worldToPixels;
   }
 };
-
