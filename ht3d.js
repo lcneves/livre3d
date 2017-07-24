@@ -8,7 +8,9 @@
 
 'use strict';
 
-function parse(html, parentObject, Object3D) {
+const Object3D = require('./object3d.js');
+
+function parse (html, parentObject) {
 
   var array = html.split('>');
   for (let index = 0; index < array.length; index++) {
@@ -44,11 +46,11 @@ function parse(html, parentObject, Object3D) {
     return results;
   }
 
-  function checkSelfClose(line) {
+  function checkSelfClose (line) {
     return (line.charAt(line.length - 1) === '/');
   }
 
-  function closeTag() {
+  function closeTag () {
     if (currentObject) {
       currentObject.makeText();
 
@@ -58,7 +60,7 @@ function parse(html, parentObject, Object3D) {
     }
   }
 
-  function parseTagLine(line) {
+  function parseTagLine (line) {
     var tagName = getTagName(line);
     var props = getProps(line);
 

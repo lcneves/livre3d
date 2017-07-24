@@ -13,7 +13,6 @@ const objectHash = require('object-hash');
 var cache = {};
 
 function add (object, descriptor) {
-  descriptor = descriptor || object;
   var hash = objectHash(descriptor);
   cache[hash] = object;
   return cache[hash];
@@ -35,7 +34,7 @@ function retrieve (descriptor) {
 }
 
 function search (object) {
-  var index = false;
+  var index = null;
   for (let key in cache) {
     if (cache[key] === object) {
       index = key;
@@ -57,7 +56,7 @@ module.exports = {
     return add(object, descriptor);
   },
 
-  delete (descriptorOrObject) {
+  remove (descriptorOrObject) {
     if (retrieve(descriptorOrObject)) {
       return remove(descriptorOrObject);
     }

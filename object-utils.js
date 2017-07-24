@@ -118,7 +118,7 @@ function getBboxFromObject (object) {
     return bBox;
   }
 
-  else if (object._isText2D) {
+  else if (object._isSpriteFromCanvas) {
     return makeBboxFromImage(object.material.map.image);
   }
 
@@ -201,6 +201,10 @@ function getDimensions (object) {
         }
       }
     }
+  }
+
+  for (let axis of AXES) {
+    virtualBox[axis] *= object.scale[axis];
   }
 
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
@@ -320,19 +324,6 @@ function makeWorldPosition (childObject, parentObject, offset) {
   return position;
 }
 
-function updateBackground (object) {
-  for (let index = 0; index < object.children.length; index++) {
-    let child = object.children[index];
-
-    if (child._isBackground) {
-      child = new Background(object);
-      child.parent = object;
-      object.children.splice(index, 1, child);
-      break;
-    }
-  }
-}
-
 function positionChildren (object) {
   var offset = makeInitialPosition();
   offset.x.distance += getSpacer(object, 'left');
@@ -378,6 +369,19 @@ function getFontSize (object) {
   }
 }
 
+function updateBackground (object) {
+  for (let index = 0; index < object.children.length; index++) {
+    let child = object.children[index];
+
+    if (child._isBackground) {
+      child = new Background(object);
+      child.parent = object;
+      object.children.splice(index, 1, child);
+      break;
+    }
+  }
+}
+
 function forceUpdate (object, property) {
   property = '_' + property;
   if (object.hasOwnProperty(property)) {
@@ -394,6 +398,20 @@ function importPrototype (object, prototype) {
   }
 }
 
+function isHeader (object) {
+  switch (object.getProperty('tag')) {
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
+      return true;
+    default:
+      return false;
+  }
+}
+
 Object.assign(module.exports, {
   Background: Background,
   forceUpdate: forceUpdate,
@@ -405,6 +423,7 @@ Object.assign(module.exports, {
   getInnerDimensions: getInnerDimensions,
   getStretchedDimensions: getStretchedDimensions,
   importPrototype: importPrototype,
+  isHeader: isHeader,
   positionChildren: positionChildren,
   updateBackground: updateBackground
 });

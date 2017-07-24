@@ -11,7 +11,9 @@
 
 module.exports = function (theme) {
 
-  const engine = require('./engine.js')(theme);
+  require('./theme.js').init(theme);
+
+  const engine = require('./engine.js');
 
   require('livre-client')({
     engine: engine

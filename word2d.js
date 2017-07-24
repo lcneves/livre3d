@@ -1,8 +1,9 @@
 /*
- * font-cache.js
+ * word2d.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Lazy-loads font character geometries to a cache.
+ * Exports an object that contains letter sprites.
+ * Part of the w3d project.
  */
 
 'use strict';
@@ -11,7 +12,7 @@ const THREE = require('three');
 const windowUtils = require('./window-utils.js');
 const objectCommons = require('./object-commons.js');
 const objectUtils = require('./object-utils.js');
-const Object3D = require('./object3d');
+const Object3D = require('./object3d.js');
 const cache = require('./cache.js');
 
 function makeTexture (character, style) {
@@ -34,11 +35,12 @@ function makeTexture (character, style) {
 }
 
 function getTextureFromCache (character, style) {
-  delete style.color; // Not important for texture
+  var styleMinusColor = JSON.parse(JSON.stringify(style));
+  delete styleMinusColor.color; // Not important for texture
 
   var descriptor = {
     character: character,
-    style: style,
+    style: styleMinusColor,
     type: 'text2d'
   };
 
@@ -46,7 +48,7 @@ function getTextureFromCache (character, style) {
 
   if (!texture) {
     texture = makeTexture(character, style);
-    cache.insert(descriptor, texture);
+    cache.insert(texture, descriptor);
   }
 
   return texture;
@@ -61,7 +63,7 @@ class CharSprite extends THREE.Sprite {
   }
 }
 
-const textSpritePrototype = {
+const charSpritePrototype = {
   resize () {
     var width = this.material.map.image.width;
     var aspect = width / this.material.map.image.height;
@@ -74,18 +76,28 @@ const textSpritePrototype = {
 };
 
 objectUtils.importPrototype(CharSprite.prototype, objectCommons);
-objectUtils.importPrototype(CharSprite.prototype, textSpritePrototype);
+objectUtils.importPrototype(CharSprite.prototype, charSpritePrototype);
 
-class Word2D extends THREE.Object3D {
-  constructor (word, style) {
+class Word2D extends Object3D {
+  // Style could be built for each new word, but it is more practical to
+  // make it only once for the whole paragraph.
+  constructor (word, style, parentObject) {
     if (!word) {
       throw new Error('Invalid word!');
     }
 
-    super();
+    super({ setParent: parentObject });
 
     this._isWord2D = true;
     this._originalWorldToPixels = windowUtils.worldToPixels;
+
+    this._ht3d = {
+      tag: 'word',
+      class: '',
+      id: ''
+    };
+    this.makeStyle();
+    this._style['margin-right'] = this.getStyle('word-spacing');
 
     var charArray = word.split('');
 
@@ -105,18 +117,14 @@ class Word2D extends THREE.Object3D {
 
 const word2DPrototype = {
   resize () {
-    var scaleFactor = windowUtils.worldToPixels / this._originalWorldToPixels;
+    var scaleFactor = this._originalWorldToPixels / windowUtils.worldToPixels;
     this.scale.set(scaleFactor, scaleFactor, 1);
 
     this.w3dAllNeedUpdate();
-  },
-
-  add (object) {
-    THREE.Object3D.prototype.add.call(this, object);
-    object._parent = this;
-
   }
 };
 
 objectUtils.importPrototype(Word2D.prototype, objectCommons);
 objectUtils.importPrototype(Word2D.prototype, word2DPrototype);
+
+module.exports = Word2D;

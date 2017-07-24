@@ -8,6 +8,8 @@
 
 'use strict';
 
+const styleArray = require('./theme.js').stylesheets;
+
 function checkSpacers(property, value) {
   return ((property === 'margin' || property === 'padding') &&
       (typeof value === 'number' || typeof value === 'string'));
@@ -90,7 +92,7 @@ function parseSpacers(property, value) {
 }
 
 // Iterates the array of stylesheets and apply relevant styles to the object.
-function make(styleArray, object) {
+function make (object) {
   var results = {};
 
   function copyProps(selector) {
