@@ -23,6 +23,7 @@ class TextMesh extends THREE.Mesh {
   constructor (geometry, material) {
     super(geometry, material);
 
+    this.castShadow = true;
     this._worldToPixelsRatio = windowUtils.worldToPixels;
     this._isText3D = true;
   }

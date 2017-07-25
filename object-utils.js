@@ -19,7 +19,7 @@ class Background extends THREE.Mesh {
   constructor (object) {
     if (object && object._isw3dObject) {
       var dimensions = object.stretchedDimensions;
-      var material = new THREE.MeshPhongMaterial({
+      var material = new THREE.MeshLambertMaterial({
         color: object.getStyle('background-color')
       });
       var geometry = new THREE.PlaneGeometry(dimensions.x, dimensions.y);
@@ -27,6 +27,7 @@ class Background extends THREE.Mesh {
 
       this._isBackground = true;
       this._ignoreSize = true;
+      this.receiveShadow = true;
     }
     else {
       throw new Error('Invalid object!');

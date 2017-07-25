@@ -27,19 +27,23 @@ const dimensions = {
 
 windowUtils.init(theme.worldWidth, window.innerWidth, window.innerHeight);
 
+var updatables = [];
+
 var scene;
 
 var camera = new Camera(
-    window.innerWidth / window.innerHeight,
-    theme.hfov,
-    dimensions
-    );
+  window.innerWidth / window.innerHeight,
+  theme.hfov,
+  dimensions
+);
 
 var body = new Body(window.innerWidth / window.innerHeight, dimensions);
 
 var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -49,6 +53,10 @@ window.addEventListener('resize', function () {
   windowUtils.windowWidth = window.innerWidth;
   windowUtils.windowHeight = window.innerHeight;
   renderer.setSize(window.innerWidth, window.innerHeight);
+
+  for (let updatable of updatables) {
+    updatable._update();
+  }
 
   if (camera) {
     camera.aspectRatio = aspectRatio;
@@ -84,20 +92,72 @@ function resetScene () {
     scene.background = new THREE.Color(theme.background);
   }
 
+  function configDirectionalLight (light) {
+    light.position.set(
+      dimensions.width / 2,
+      - dimensions.width / (2 * windowUtils.aspectRatio),
+      dimensions.near
+    );
+    light.shadow.camera.left = - dimensions.width / 2;
+    light.shadow.camera.right = dimensions.width / 2;
+    light.shadow.camera.bottom = - dimensions.width /
+      (2 * windowUtils.aspectRatio);
+    light.shadow.camera.top = dimensions.width /
+      (2 * windowUtils.aspectRatio);
+    light.shadow.camera.near = 0;
+    light.shadow.camera.far = dimensions.far - dimensions.near;
+    light.shadow.camera.updateProjectionMatrix();
+    light.shadow.mapSize.width = 1024;
+    light.shadow.mapSize.height = 1024;
+
+  }
+
+  function configLightTarget (target) {
+    target.position.set(
+      dimensions.width / 2,
+      - dimensions.width / (2 * windowUtils.aspectRatio),
+      0
+    );
+  }
+
   for (let light of theme.lights) {
     let newLight;
     switch (light.type) {
       case 'ambient':
         newLight = new THREE.AmbientLight(
-            light.color ? light.color : 0xffffff
-            );
+          light.color ? light.color : 0xffffff,
+          light.intensity ? light.intensity : 0.6
+        );
         break;
-      case 'directional':
-        newLight = new THREE.DirectionalLight({
-          color: light.color ? light.color : 0xffffff,
-          intensity: light.intensity ? light.intensity : 0.5,
-          position: light.position ? light.position : (1, 1, 1)
-        });
+
+      case 'directional': {
+        newLight = new THREE.DirectionalLight(
+          light.color ? light.color : 0xffffff,
+          light.intensity ? light.intensity : 0.4
+        );
+        newLight.castShadow = true;
+        newLight._update = function () { configDirectionalLight(this); };
+        updatables.push(newLight);
+        newLight._update();
+        let targetObject = new THREE.Object3D();
+        targetObject._update = function () { configLightTarget(this); };
+        updatables.push(targetObject);
+        targetObject._update();
+        scene.add(targetObject);
+        newLight.target = targetObject;
+        break;
+      }
+
+      case 'point':
+        // PointLight( color, intensity, distance, decay )
+        newLight = new THREE.PointLight(
+          light.color ? light.color : 0xffffff,
+          light.intensity ? light.intensity : 0.2,
+          light.distance ? light.distance : 0,
+          light.decay ? light.decay : 0
+        );
+        newLight.position.set(-10, 10, 100);
+        newLight.castShadow = true;
         break;
     }
     if (newLight) {
