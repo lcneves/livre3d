@@ -63,17 +63,19 @@ const backgroundPrototype = {
 importPrototype(Background.prototype, objectCommons);
 importPrototype(Background.prototype, backgroundPrototype);
 
-function getDirectionAxis (direction) {
+function getAxis (object, type) {
+  var direction = object.getStyle('direction');
   var directionAxis;
+
   switch (direction) {
     case 'row':
-      directionAxis = 'x';
+      directionAxis = type === 'cross' ? 'y' : 'x';
       break;
     case 'stack':
-      directionAxis = 'z';
+      directionAxis = type === 'cross' ? 'x' : 'z';
       break;
     default:
-      directionAxis = 'y';
+      directionAxis = type === 'cross' ? 'x' : 'y';
       break;
   }
   return directionAxis;
@@ -191,7 +193,7 @@ function getDimensions (object) {
   for (let child of object.children) {
     if (!child._ignoreSize) {
 
-      let directionAxis = getDirectionAxis(direction);
+      let directionAxis = getAxis(object);
       for (let axis of AXES) {
         if (axis === directionAxis) {
           virtualBox[axis] += child.totalDimensions[axis];
@@ -331,6 +333,9 @@ function positionChildren (object) {
   offset.y.distance += getSpacer(object, 'top');
   offset.z.distance += getSpacer(object, 'far');
 
+  let directionAxis = getAxis(object);
+
+
   for (let child of object.children) {
     let position;
 
@@ -343,9 +348,6 @@ function positionChildren (object) {
     }
     else {
       position = makeWorldPosition(child, object, offset);
-
-      let directionAxis =
-        getDirectionAxis(object.getStyle('direction'));
 
       offset[directionAxis].distance += child.totalDimensions[directionAxis];
     }
@@ -419,7 +421,7 @@ Object.assign(module.exports, {
   getBoundaries: getBoundaries,
   getDimensions: getDimensions,
   getDimensionsWithMargin: getDimensionsWithMargin,
-  getDirectionAxis: getDirectionAxis,
+  getAxis: getAxis,
   getFontSize: getFontSize,
   getInnerDimensions: getInnerDimensions,
   getStretchedDimensions: getStretchedDimensions,

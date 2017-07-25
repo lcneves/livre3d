@@ -115,16 +115,4 @@ class Word2D extends Object3D {
   }
 }
 
-const word2DPrototype = {
-  resize () {
-    var scaleFactor = this._originalWorldToPixels / windowUtils.worldToPixels;
-    this.scale.set(scaleFactor, scaleFactor, 1);
-
-    this.w3dAllNeedUpdate();
-  }
-};
-
-objectUtils.importPrototype(Word2D.prototype, objectCommons);
-objectUtils.importPrototype(Word2D.prototype, word2DPrototype);
-
 module.exports = Word2D;
