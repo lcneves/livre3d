@@ -47,7 +47,7 @@ function makeText3D (object) {
 
   var fontPromise = theme.resources.fonts[
     object.getStyle('font-family') + '-' + object.getStyle('font-weight')
-    ].fontPromise;
+  ].fontPromise;
 
   return new Promise(resolve => {
     fontPromise.then(font => {
@@ -64,7 +64,7 @@ function makeText3D (object) {
       });
       var material = new THREE.MeshPhongMaterial(
         { color: object.getStyle('color') }
-        );
+      );
       var mesh = new TextMesh(geometry, material);
 
       resolve([mesh]);

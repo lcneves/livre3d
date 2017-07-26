@@ -19,22 +19,20 @@ class Body extends Object3D {
   get boundaries () {
     return {
       left: 0,
-        right: this._bodyDimensions.width,
-        top: 0,
-        bottom: this._bodyDimensions.width / this._aspect,
-        far: 0,
-        near: this._bodyDimensions.far - this._bodyDimensions.near
+      right: this._bodyDimensions.width,
+      top: 0,
+      bottom: this._bodyDimensions.width / this._aspect,
+      far: 0,
+      near: this._bodyDimensions.far - this._bodyDimensions.near
     };
   }
 
-  get dimensions () {
-    var bodyDimensions = {
+  get size () {
+    return {
       x: this._bodyDimensions.width,
       y: this._bodyDimensions.width / this._aspect,
       z: this._bodyDimensions.far - this._bodyDimensions.near
     };
-
-    return bodyDimensions;
   }
 
   set aspectRatio (value) {

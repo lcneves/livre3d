@@ -41,11 +41,11 @@ module.exports = class Object3D extends THREE.Object3D {
     if (options.mesh) {
       super.add(options.mesh);
     }
-    
+
     this._parent = parentObject;
     this._isw3dObject = true;
   }
-}
+};
 
 const object3DPrototype = {
   get fontSize () {

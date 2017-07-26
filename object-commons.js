@@ -31,10 +31,9 @@ module.exports = {
 
   w3dAllNeedUpdate () {
     this.w3dNeedsUpdate = [
-      'dimensions',
-      'innerDimensions',
-      'totalDimensions',
-      'stretchedDimensions',
+      'size',
+      'innerSize',
+      'totalSize',
       'boundaries'
     ];
   },
@@ -50,38 +49,61 @@ module.exports = {
     }
   },
 
-  get dimensions () {
-    if (!this._dimensions) {
-      this._dimensions = objectUtils.getDimensions(this);
-    }
-    return this._dimensions;
-  },
-
-  get innerDimensions () {
-    if (!this._innerDimensions) {
-      this._innerDimensions = objectUtils.getInnerDimensions(this);
-    }
-    return this._innerDimensions;
-  },
-
-  get totalDimensions () {
-    if (!this._totalDimensions) {
-      this._totalDimensions = objectUtils.getDimensionsWithMargin(this);
-    }
-    return this._totalDimensions;
-  },
-
-  get containerDimensions () {
-    return this._parent
-      ? this._parent.innerDimensions
-      : this.dimensions;
-  },
-
   get boundaries () {
     if (!this._boundaries) {
       this._boundaries = objectUtils.getBoundaries(this);
     }
     return this._boundaries;
+  },
+
+  get size () {
+    if (!this._size) {
+      this._size = objectUtils.getSize(this);
+    }
+    return this._size;
+  },
+
+  get innerSize () {
+    if (!this._innerSize) {
+      this._innerSize = objectUtils.getInnerSize(this);
+    }
+    return this._innerSize;
+  },
+
+  get outerSize () {
+    if (!this._outerSize) {
+      this._outerSize = objectUtils.getOuterSize(this);
+    }
+    return this._outerSize;
+  },
+
+  _availableSpace: {
+    x: Infinity,
+    y: Infinity,
+    z: Infinity
+  },
+
+  get availableSpace () {
+    return this._availableSpace;
+  },
+
+  setAvailableSpace (axis, value) {
+    this._availableSpace[axis] = value;
+  },
+
+  get minContentContribution () {
+    if (!this._minContentContribution) {
+      this._minContentContribution =
+      objectUtils.getContentContribution(this, 'min');
+    }
+    return this._minContentContribution;
+  },
+
+  get maxContentContribution () {
+    if (!this._maxContentContribution) {
+      this._maxContentContribution =
+        objectUtils.getContentContribution(this, 'max');
+    }
+    return this._maxContentContribution;
   }
 };
-

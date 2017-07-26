@@ -18,11 +18,11 @@ const AXES = ['x', 'y', 'z'];
 class Background extends THREE.Mesh {
   constructor (object) {
     if (object && object._isw3dObject) {
-      var dimensions = object.stretchedDimensions;
+      var size = object.stretchedSize;
       var material = new THREE.MeshLambertMaterial({
         color: object.getStyle('background-color')
       });
-      var geometry = new THREE.PlaneGeometry(dimensions.x, dimensions.y);
+      var geometry = new THREE.PlaneGeometry(size.x, size.y);
       super(geometry, material);
 
       this._isBackground = true;
@@ -39,14 +39,14 @@ const backgroundPrototype = {
   resize () {},
   w3dAllNeedUpdate () {},
   set w3dNeedsUpdate (property) {},
-  get dimensions () {
+  get size () {
     return makeInitialVirtualBox();
   },
-  get innerDimensions () {
-    return this.dimensions;
+  get innerSize () {
+    return this.size;
   },
-  get totalDimensions () {
-    return this.dimensions;
+  get totalSize () {
+    return this.size;
   },
   get boundaries () {
     return {
@@ -81,7 +81,7 @@ function getAxis (object, type) {
   return directionAxis;
 }
 
-function getDimensionsFromBbox (bbox) {
+function getSizeFromBbox (bbox) {
   return {
     x: bbox.max.x - bbox.min.x,
     y: bbox.max.y - bbox.min.y,
@@ -139,88 +139,6 @@ function makeInitialVirtualBox () {
   };
 }
 
-function getStretchedDimensions (object) {
-  const display = object.getStyle('display');
-  const parentDirection = object._parent.getStyle('direction');
-  const alignSelf = object.getStyle('align-self');
-  const align = alignSelf !== 'initial'
-    ? alignSelf : object._parent.getStyle('align-items');
-
-  var dimensions = object.dimensions;
-
-  switch (display) {
-    case 'plane':
-      dimensions.x = object.containerDimensions.x;
-      dimensions.y = object.containerDimensions.y;
-      break;
-
-    case 'block':
-      if (align === 'stretch') {
-        if (parentDirection === 'column') {
-          dimensions.x = object.containerDimensions.x;
-        }
-        else if (parentDirection === 'row') {
-          dimensions.y = object.containerDimensions.y;
-        }
-      }
-      break;
-  }
-
-  return dimensions;
-}
-
-function getDimensionsWithMargin (object) {
-  if (object._isw3dObject) {
-    return addSpacers(object.dimensions, getSpacers(object, 'margin'));
-  }
-  else {
-    return object.dimensions;
-  }
-}
-
-/*
- * Gives the object's world dimensions in a boundary box.
- * Does not include margins; only paddings.
- */
-function getDimensions (object) {
-  if (!object._isw3dObject) {
-    return getDimensionsFromBbox(getBboxFromObject(object));
-  }
-
-  var direction = object.getStyle('direction');
-  var virtualBox = makeInitialVirtualBox();
-
-  for (let child of object.children) {
-    if (!child._ignoreSize) {
-
-      let directionAxis = getAxis(object);
-      for (let axis of AXES) {
-        if (axis === directionAxis) {
-          virtualBox[axis] += child.totalDimensions[axis];
-        }
-        else {
-          virtualBox[axis] =
-            Math.max(virtualBox[axis], child.totalDimensions[axis]);
-        }
-      }
-    }
-  }
-
-  for (let axis of AXES) {
-    virtualBox[axis] *= object.scale[axis];
-  }
-
-  virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
-
-  return virtualBox;
-}
-
-function getInnerDimensions (object) {
-  return removeSpacers(
-    object.stretchedDimensions, getSpacers(object, 'padding'));
-}
-
-
 function getSpacer (object, direction) {
   if (object._isw3dObject) {
     return units.convert(object, 'margin-' + direction, 'world') +
@@ -261,6 +179,96 @@ function removeSpacers (box, spacers) {
   return box;
 }
 
+function getStretchedSize (object) {
+  const display = object.getStyle('display');
+  const parentDirection = object._parent.getStyle('direction');
+  const alignSelf = object.getStyle('align-self');
+  const align = alignSelf !== 'initial'
+    ? alignSelf : object._parent.getStyle('align-items');
+
+  var size = object.size;
+
+  switch (display) {
+    case 'plane':
+      size.x = object.containerSize.x;
+      size.y = object.containerSize.y;
+      break;
+
+    case 'block':
+      if (align === 'stretch') {
+        if (parentDirection === 'column') {
+          size.x = object.containerSize.x;
+        }
+        else if (parentDirection === 'row') {
+          size.y = object.containerSize.y;
+        }
+      }
+      break;
+  }
+
+  return size;
+}
+
+function getSize (object) {
+  if (!object._isw3dObject) {
+    return getSizeFromBbox(getBboxFromObject(object));
+  }
+}
+
+function getInnerSize (object) {
+  if (object._isw3dObject) {
+    return removeSpacers(object.size, getSpacers(object, 'padding'));
+  }
+  else {
+    return object.size;
+  }
+}
+
+function getOuterSize (object) {
+  if (object._isw3dObject) {
+    return addSpacers(object.size, getSpacers(object, 'margin'));
+  }
+  else {
+    return object.size;
+  }
+}
+
+/*
+ * Gives the object's world size in a boundary box.
+ * Does not include margins; only paddings.
+ */
+function getContentContribution (object, minMax) {
+  if (!object._isw3dObject) {
+    return object.size;
+  }
+
+  var virtualBox = makeInitialVirtualBox();
+
+  for (let child of object.children) {
+    if (!child._ignoreSize) {
+
+      for (let axis of AXES) {
+        if (minMax === 'max') {
+          virtualBox[axis] += child.totalSize[axis];
+        }
+        else {
+          virtualBox[axis] =
+            Math.max(virtualBox[axis], child.totalSize[axis]);
+        }
+      }
+    }
+  }
+
+  for (let axis of AXES) {
+    virtualBox[axis] *= object.scale[axis];
+  }
+
+  virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
+  virtualBox = addSpacers(virtualBox, getSpacers(object, 'margin'));
+
+  return virtualBox;
+}
+
 /*
  * Gives the object's world boundaries relative to its position point.
  * Three.js uses the right-hand coordinate system, so:
@@ -270,14 +278,14 @@ function removeSpacers (box, spacers) {
  */
 function getBoundaries (object) {
   if (object._isw3dObject) {
-    var dimensions = object.dimensions;
+    var size = object.size;
     return {
       left: 0,
-      right: dimensions.x,
-      top: dimensions.y,
+      right: size.x,
+      top: size.y,
       bottom: 0,
       far: 0,
-      near: dimensions.z
+      near: size.z
     };
   }
   else {
@@ -334,7 +342,7 @@ function positionChildren (object) {
   offset.z.distance += getSpacer(object, 'far');
 
   let directionAxis = getAxis(object);
-
+  let crossAxis = getAxis(object, 'cross');
 
   for (let child of object.children) {
     let position;
@@ -349,7 +357,7 @@ function positionChildren (object) {
     else {
       position = makeWorldPosition(child, object, offset);
 
-      offset[directionAxis].distance += child.totalDimensions[directionAxis];
+      offset[directionAxis].distance += child.totalSize[directionAxis];
     }
 
     for (let axis of AXES) {
@@ -359,6 +367,23 @@ function positionChildren (object) {
     if (child._isw3dObject) {
       child.positionChildren();
     }
+  }
+}
+
+function positionChildren (object) {
+  var mainAxis = getAxis(object);
+  var crossAxis = getAxis(object, 'cross');
+  var minContributions = 0;
+  var maxContributions = 0;
+  const innerSize = this.innerSize;
+
+  for (let child of this.children) {
+    minContributions += child.minContentContribution[mainAxis];
+    maxContributions += child.maxContentContribution[mainAxis];
+  }
+
+  if (maxContributions <= innerSize[mainAxis]) {
+    //TODO: Continue here.
   }
 }
 
@@ -419,12 +444,13 @@ Object.assign(module.exports, {
   Background: Background,
   forceUpdate: forceUpdate,
   getBoundaries: getBoundaries,
-  getDimensions: getDimensions,
-  getDimensionsWithMargin: getDimensionsWithMargin,
+  getContentContribution: getContentContribution,
+  getSize: getSize,
+  getOuterSize: getOuterSize,
   getAxis: getAxis,
   getFontSize: getFontSize,
-  getInnerDimensions: getInnerDimensions,
-  getStretchedDimensions: getStretchedDimensions,
+  getInnerSize: getInnerSize,
+  getStretchedSize: getStretchedSize,
   importPrototype: importPrototype,
   isHeader: isHeader,
   positionChildren: positionChildren,
