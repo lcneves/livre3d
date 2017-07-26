@@ -81,6 +81,19 @@ function getAxis (object, type) {
   return directionAxis;
 }
 
+function getWorldDimensions (object, prefix) {
+  prefix = prefix ? prefix + '-' : '';
+  const radical = ['width', 'height', 'depth'];
+  var dimensions = {};
+
+  for (let i = 0; i < radical.length; i++) {
+    dimensions[AXES[i]] =
+      units.convert(object.getStyle(prefix + radical[i]), 'world');
+  }
+
+  return dimensions;
+}
+
 function getSizeFromBbox (bbox) {
   return {
     x: bbox.max.x - bbox.min.x,
@@ -233,35 +246,57 @@ function getOuterSize (object) {
   }
 }
 
-/*
- * Gives the object's world size in a boundary box.
- * Does not include margins; only paddings.
- */
-function getContentContribution (object, minMax) {
-  if (!object._isw3dObject) {
-    return object.size;
-  }
-
+function getMinContentContribution (object) {
+  const minDimensions = getWorldDimensions(this, 'min');
   var virtualBox = makeInitialVirtualBox();
 
   for (let child of object.children) {
     if (!child._ignoreSize) {
-
       for (let axis of AXES) {
-        if (minMax === 'max') {
-          virtualBox[axis] += child.totalSize[axis];
-        }
-        else {
-          virtualBox[axis] =
-            Math.max(virtualBox[axis], child.totalSize[axis]);
-        }
+        virtualBox[axis] = Math.max(
+          virtualBox[axis],
+          minDimensions[axis],
+          child.totalSize[axis]
+        );
       }
     }
   }
 
-  for (let axis of AXES) {
-    virtualBox[axis] *= object.scale[axis];
+  return virtualBox;
+}
+
+function getMaxContentContribution (object) {
+  var virtualBox = makeInitialVirtualBox();
+
+  for (let child of object.children) {
+    if (!child._ignoreSize) {
+      for (let axis of AXES) {
+        virtualBox[axis] += child.totalSize[axis];
+      }
+    }
   }
+
+  const maxDimensions = getWorldDimensions(this, 'max');
+  for (let axis of AXES) {
+    virtualBox[axis] = Math.min(virtualBox[axis], maxDimensions[axis]);
+  }
+
+  return virtualBox;
+}
+
+function getContentContribution (object, minMax) {
+  if (minMax !== 'min' && minMax !== 'max') {
+    throw new Error('Expected parameter to be \'min\' or \'max\', got: ' +
+      JSON.Stringify(minMax));
+  }
+
+  if (!object._isw3dObject) {
+    return object.size;
+  }
+
+  var virtualBox = minMax === 'min'
+    ? getMinContentContribution(object)
+    : getMaxContentContribution(object);
 
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'margin'));

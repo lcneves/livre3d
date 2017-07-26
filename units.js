@@ -24,6 +24,10 @@ function parseSize (size) {
 
   else if (typeof size === 'string') {
 
+    if (size === 'initial') {
+      return undefined;
+    }
+
     if (!isNaN(size)) {
       return {
         quantum: +size,
@@ -63,6 +67,10 @@ function parseSize (size) {
 function convert (object, parameter, unit) {
 
   var parsed = parseSize(object.getStyle(parameter));
+  if (parsed === undefined) {
+    return undefined;
+  }
+
   var quantum;
 
   switch (parsed.unit) {
@@ -116,4 +124,3 @@ function convert (object, parameter, unit) {
 
 module.exports.parse = parseSize;
 module.exports.convert = convert;
-
