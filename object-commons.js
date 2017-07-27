@@ -77,6 +77,14 @@ module.exports = {
     return this._outerSize;
   },
 
+  set outerSize (newSize) {
+    var oldSize = this.outerSize;
+    for (let axis in newSize) {
+      oldSize[axis] = newSize[axis];
+    }
+    this._outerSize = newSize;
+  },
+
   _availableSpace: {
     x: Infinity,
     y: Infinity,
