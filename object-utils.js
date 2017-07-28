@@ -19,7 +19,7 @@ const CSS_AXES = ['width', 'height', 'depth'];
 class Background extends THREE.Mesh {
   constructor (object) {
     if (object && object._isw3dObject) {
-      var size = object.stretchedSize;
+      var size = object.size;
       var material = new THREE.MeshLambertMaterial({
         color: object.getStyle('background-color')
       });
@@ -46,7 +46,7 @@ const backgroundPrototype = {
   get innerSize () {
     return this.size;
   },
-  get totalSize () {
+  get outerSize () {
     return this.size;
   },
   get boundaries () {
@@ -90,7 +90,7 @@ function getWorldDimensions (object, prefix) {
 
   for (let i = 0; i < radical.length; i++) {
     dimensions[AXES[i]] =
-      units.convert(object.getStyle(prefix + radical[i]), 'world');
+      units.convert(object, prefix + radical[i], 'world');
   }
 
   return dimensions;
@@ -272,8 +272,8 @@ function getOuterSize (object) {
       }
       else {
         if (AXES[i] === axes['main']) {
-          dimensions[AXES[i]] = Math.Max(this.minContentContribution,
-            Math.min(this.maxContentContribution, this.availableSpace));
+          dimensions[AXES[i]] = Math.max(object.minContentContribution,
+            Math.min(object.maxContentContribution, object.availableSpace));
         }
         else {
           dimensions[AXES[i]] = undefined;
@@ -344,6 +344,8 @@ function getContentContribution (object, minMax) {
 
   const wrap = object.getStyle('wrap');
   const mainAxis = getAxes(object)['main'];
+  const minDimensions = getWorldDimensions(object, 'min');
+  const maxDimensions = getWorldDimensions(object, 'max');
 
   var virtualBox = minMax === 'min'
     ? getMinContentContribution(object, minDimensions, wrap, mainAxis)
@@ -351,9 +353,7 @@ function getContentContribution (object, minMax) {
 
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
 
-  const dimensions = getWorldDimensions(this);
-  const minDimensions = getWorldDimensions(this, 'min');
-  const maxDimensions = getWorldDimensions(this, 'max');
+  const dimensions = getWorldDimensions(object);
   for (let axis of AXES) {
     if (dimensions[axis] !== undefined) {
       virtualBox[axis] = dimensions[axis];
@@ -477,15 +477,18 @@ function positionLine (
       );
     }
 
-    child.position = makeWorldPosition(child, object, offset);
-
     if (child._isw3dObject) {
       child.positionChildren();
     }
 
-    offset[axes['main']].distance += child.totalSize[axes['main']];
-    crossSize = Math.max(crossSize, child.totalSize[axes['cross']]);
-    otherSize = Math.max(otherSize, child.totalSize[axes['other']]);
+    let childPosition = makeWorldPosition(child, object, offset);
+    for (let axis of AXES) {
+      child.position[axis] = childPosition[axis];
+    }
+
+    offset[axes['main']].distance += child.outerSize[axes['main']];
+    crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
+    otherSize = Math.max(otherSize, child.outerSize[axes['other']]);
 
   }
 
@@ -501,7 +504,7 @@ function positionChildren (object) {
   offset.y.distance += getSpacer(object, 'top');
   offset.z.distance += getSpacer(object, 'far');
 
-  // At this time, we can only know for sure the object's main axis
+  // At object time, we can only know for sure the object's main axis
   // dimensions. After positioning the children we will know the rest.
   var objectCrossSize = 0;
   var objectOtherSize = 0;
@@ -511,23 +514,26 @@ function positionChildren (object) {
 
   for (
     let currentChild = 0;
-    currentChild < this.children.length;
+    currentChild < object.children.length;
     currentChild++
   ) {
-    let child = this.children[currentChild];
+    let child = object.children[currentChild];
 
     if (child._isBackground) {
-      child.position = makeWorldPosition(
+      let childPosition = makeWorldPosition(
         child,
         object,
         makeInitialPosition()
       );
+      for (let axis of AXES) {
+        child.position[axis] = childPosition[axis];
+      }
       continue;
     }
 
     if (wrap &&
       minContributions + child.minContentContribution[objectAxes.main] >
-        this.innerSize[objectAxes.main]
+        object.innerSize[objectAxes.main]
     ) {
       let lineDimensions = positionLine(
         object, offset, minContributions,

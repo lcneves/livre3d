@@ -27,13 +27,15 @@ class Body extends Object3D {
     };
   }
 
-  get size () {
+  get outerSize () {
     return {
       x: this._bodyDimensions.width,
       y: this._bodyDimensions.width / this._aspect,
       z: this._bodyDimensions.far - this._bodyDimensions.near
     };
   }
+
+  set outerSize (newSize) {}
 
   set aspectRatio (value) {
     this._aspect = value;
