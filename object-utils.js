@@ -73,10 +73,10 @@ function getAxes (object) {
       axes = { main: 'x', cross: 'y', other: 'z' };
       break;
     case 'stack':
-      axes = { main: 'y', cross: 'x', other: 'z' };
+      axes = { main: 'z', cross: 'x', other: 'y' };
       break;
     default:
-      axes = { main: 'z', cross: 'x', other: 'y' };
+      axes = { main: 'y', cross: 'x', other: 'z' };
       break;
   }
 
@@ -85,12 +85,11 @@ function getAxes (object) {
 
 function getWorldDimensions (object, prefix) {
   prefix = prefix ? prefix + '-' : '';
-  const radical = ['width', 'height', 'depth'];
   var dimensions = {};
 
-  for (let i = 0; i < radical.length; i++) {
+  for (let i = 0; i < CSS_AXES.length; i++) {
     dimensions[AXES[i]] =
-      units.convert(object, prefix + radical[i], 'world');
+      units.convert(object, prefix + CSS_AXES[i], 'world');
   }
 
   return dimensions;
@@ -180,6 +179,25 @@ function getSpacers (object, type) {
   }
 }
 
+function getSizesFromStyle (object) {
+  if (object._isw3dObject) {
+    var sizes = { x: {}, y: {}, z: {} };
+    for (let prefix of [ '', 'min-', 'max-' ]) {
+      let propName = prefix ? 'fixed' : prefix.substring(0, 3);
+      for (let i = 0; i < AXES.length; i++) {
+        sizes[AXES[i]][propName] = units.convert(
+          object,
+          prefix + CSS_AXES[i],
+          'world'
+        );
+      }
+    }
+  }
+  else {
+    throw new Error('Object is not a w3d object!');
+  }
+}
+
 function addSpacers (box, spacers) {
   for (let axis of AXES) {
     box[axis] += spacers[axis];
@@ -261,6 +279,17 @@ function getInnerSize (object) {
   }
 }
 
+function getMainAxisInnerSize (object) {
+
+  return Math.max(
+    object.minContentContribution[AXES[i]],
+    Math.min(
+      object.maxContentContribution[AXES[i]],
+      object.availableSpace[AXES[i]]
+    )
+  );
+}
+
 function getOuterSize (object) {
   if (object._isw3dObject) {
     const axes = getAxes(object);
@@ -272,8 +301,13 @@ function getOuterSize (object) {
       }
       else {
         if (AXES[i] === axes['main']) {
-          dimensions[AXES[i]] = Math.max(object.minContentContribution,
-            Math.min(object.maxContentContribution, object.availableSpace));
+          dimensions[AXES[i]] = Math.max(
+            object.minContentContribution[AXES[i]],
+            Math.min(
+              object.maxContentContribution[AXES[i]],
+              object.availableSpace[AXES[i]]
+            )
+          );
         }
         else {
           dimensions[AXES[i]] = undefined;
@@ -466,7 +500,7 @@ function positionLine (
       ? grow / totalGrowth : 0;
 
     child.setAvailableSpace(
-      'main',
+      axes['main'],
       child.minContentContribution[axes['main']] +
         availableSpace * growthFactor
     );
@@ -572,14 +606,23 @@ function getFontSize (object) {
 }
 
 function updateBackground (object) {
-  for (let index = 0; index < object.children.length; index++) {
-    let child = object.children[index];
+  if (object._hasBackground) {
+    var newBg = new Background(object);
+    var bgIndex;
 
-    if (child._isBackground) {
-      child = new Background(object);
-      child.parent = object;
-      object.children.splice(index, 1, child);
-      break;
+    for (let index = 0; index < object.children.length; index++) {
+      if (object.children[index]._isBackground) {
+        bgIndex = index;
+        break;
+      }
+    }
+
+    if (bgIndex !== undefined) {
+      newBg.parent = object;
+      object.children.splice(bgIndex, 1, newBg);
+    }
+    else {
+      object.add(newBg);
     }
   }
 }
@@ -620,6 +663,7 @@ Object.assign(module.exports, {
   getBoundaries: getBoundaries,
   getContentContribution: getContentContribution,
   getSize: getSize,
+  getSizesFromStyle: getSizesFromStyle,
   getOuterSize: getOuterSize,
   getAxes: getAxes,
   getFontSize: getFontSize,

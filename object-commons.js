@@ -33,7 +33,6 @@ module.exports = {
     this.w3dNeedsUpdate = [
       'size',
       'innerSize',
-      'totalSize',
       'boundaries'
     ];
   },
@@ -77,14 +76,6 @@ module.exports = {
     return this._outerSize;
   },
 
-  set outerSize (newSize) {
-    var oldSize = this.outerSize;
-    for (let axis in newSize) {
-      oldSize[axis] = newSize[axis];
-    }
-    this._outerSize = newSize;
-  },
-
   _availableSpace: {
     x: Infinity,
     y: Infinity,
@@ -97,6 +88,7 @@ module.exports = {
 
   setAvailableSpace (axis, value) {
     this._availableSpace[axis] = value;
+    this.w3dAllNeedUpdate();
   },
 
   get minContentContribution () {

@@ -79,8 +79,22 @@ const object3DPrototype = {
     for (let child of this.children) {
       child.resize();
     }
+  },
 
-    this.updateBackground();
+  set outerSize (newSize) {
+    var sizesFromStyle = objectUtils.getSizesFromStyle(this);
+    var updatedSize = this.outerSize;
+
+    for (let axis in newSize) {
+      updatedSize[axis] = sizesFromStyle[axis].fixed
+        ? sizesFromStyle[axis].fixed
+        : Math.max(
+          sizesFromStyle[axis].min,
+          Math.min(sizesFromStyle[axis].max, newSize[axis])
+        );
+    }
+    this._outerSize = updatedSize;
+    this.w3dAllNeedUpdate();
   },
 
   updateBackground () {
@@ -103,6 +117,7 @@ const object3DPrototype = {
   arrangeChildren () {
     this.resize();
     this.positionChildren();
+    this.updateBackground();
   },
 
   getProperty (property) {
@@ -127,8 +142,8 @@ const object3DPrototype = {
   makeStyle () {
     this._style = style.make(this);
 
-    if (this._style['background-color']) {
-      this.add(new objectUtils.Background(this));
+    if (this._style['background-color'] !== undefined) {
+      this._hasBackground = true;
     }
   },
 
