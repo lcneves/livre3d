@@ -33,7 +33,8 @@ module.exports = {
     this.w3dNeedsUpdate = [
       'size',
       'innerSize',
-      'boundaries'
+      'boundaries',
+      'containerSpace'
     ];
   },
 
@@ -76,18 +77,21 @@ module.exports = {
     return this._outerSize;
   },
 
-  _availableSpace: {
-    x: Infinity,
-    y: Infinity,
-    z: Infinity
-  },
-
   get availableSpace () {
     return this._availableSpace;
   },
 
-  setAvailableSpace (axis, value) {
-    this._availableSpace[axis] = value;
+  set availableSpace (value) {
+    for (let axis of ['x', 'y', 'z']) {
+      if (
+        typeof value[axis] !== 'number' ||
+        isNaN(value[axis])
+      ) {
+        throw new Error('New values for availableSpace contain a non-number!' +
+          ' Received: ' + JSON.stringify(value));
+      }
+    }
+    this._availableSpace = value;
     this.w3dAllNeedUpdate();
   },
 

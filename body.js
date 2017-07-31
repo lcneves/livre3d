@@ -35,6 +35,10 @@ class Body extends Object3D {
     };
   }
 
+  get availableSpace () {
+    return this.outerSize;
+  }
+
   set outerSize (newSize) {}
 
   set aspectRatio (value) {

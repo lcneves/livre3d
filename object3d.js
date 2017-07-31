@@ -82,9 +82,8 @@ const object3DPrototype = {
   },
 
   set outerSize (newSize) {
+    var updatedSize = {};
     var sizesFromStyle = objectUtils.getSizesFromStyle(this);
-    var updatedSize = this.outerSize;
-
     for (let axis in newSize) {
       updatedSize[axis] = sizesFromStyle[axis].fixed
         ? sizesFromStyle[axis].fixed
@@ -99,6 +98,13 @@ const object3DPrototype = {
 
   updateBackground () {
     objectUtils.updateBackground(this);
+  },
+
+  get containerSpace () {
+    if (!this._containerSpace) {
+      this._containerSpace = objectUtils.getContainerSpace(this);
+    }
+    return this._containerSpace;
   },
 
   get stretchedDimensions () {
