@@ -288,12 +288,13 @@ function getInnerSize (object) {
 }
 
 function getMainAxisInnerSize (object) {
+  var axes = getAxes(object);
 
   return Math.max(
-    object.minContentContribution[AXES[i]],
+    object.minContentContribution[axes['main']],
     Math.min(
-      object.maxContentContribution[AXES[i]],
-      object.availableSpace[AXES[i]]
+      object.maxContentContribution[axes['main']],
+      object.availableSpace[axes['main']]
     )
   );
 }
@@ -550,23 +551,10 @@ function positionChildren (object) {
   var minContributions = 0;
   var lastPositionedChild = -1;
 
-  for (
-    let currentChild = 0;
-    currentChild < object.children.length;
-    currentChild++
-  ) {
-    let child = object.children[currentChild];
+  for (let i = 0; i < object.children.length; i++) {
+    let child = object.children[i];
 
     if (child._isBackground) {
-      /*
-      let childPosition = makeWorldPosition(
-        child,
-        makeInitialPosition()
-      );
-      for (let axis of AXES) {
-        child.position[axis] = childPosition[axis];
-      }
-      */
       continue;
     }
 
@@ -576,13 +564,13 @@ function positionChildren (object) {
     ) {
       let lineDimensions = positionLine(
         object, offset, minContributions,
-        lastPositionedChild + 1, currentChild - 1);
+        lastPositionedChild + 1, i - 1);
 
       offset[objectAxes['cross']]['distance'] += lineDimensions.crossSize;
       objectCrossSize += lineDimensions.crossSize;
       objectOtherSize += lineDimensions.otherSize;
 
-      lastPositionedChild = currentChild - 1;
+      lastPositionedChild = i - 1;
       minContributions = child.minContentContribution[objectAxes.main];
     }
     else {

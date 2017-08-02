@@ -81,21 +81,6 @@ const object3DPrototype = {
     }
   },
 
-  set outerSize (newSize) {
-    var updatedSize = {};
-    var sizesFromStyle = objectUtils.getSizesFromStyle(this);
-    for (let axis in newSize) {
-      updatedSize[axis] = sizesFromStyle[axis].fixed
-        ? sizesFromStyle[axis].fixed
-        : Math.max(
-          sizesFromStyle[axis].min,
-          Math.min(sizesFromStyle[axis].max, newSize[axis])
-        );
-    }
-    this._outerSize = updatedSize;
-    this.w3dAllNeedUpdate();
-  },
-
   updateBackground () {
     objectUtils.updateBackground(this);
   },
