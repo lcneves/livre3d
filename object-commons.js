@@ -30,12 +30,18 @@ module.exports = {
   },
 
   w3dAllNeedUpdate () {
-    this.w3dNeedsUpdate = [
+    var updateArray = [
       'size',
       'innerSize',
       'boundaries',
-      'containerSpace'
+      'containerSpace',
+      'minContentContribution',
+      'maxContentContribution'
     ];
+    if (!this._isw3dObject) {
+      updateArray.push('outerSize');
+    }
+    this.w3dNeedsUpdate = updateArray;
   },
 
   set w3dNeedsUpdate (property) {

@@ -48,16 +48,6 @@ const backgroundPrototype = {
   },
   get outerSize () {
     return this.size;
-  },
-  get boundaries () {
-    return {
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
-      far: 0,
-      near: 0
-    };
   }
 };
 
@@ -153,10 +143,10 @@ function makeInitialVirtualBox () {
   };
 }
 
-function getSpacer (object, direction) {
+function getSpacer (object, direction, onlyMargin) {
   if (object._isw3dObject) {
     return units.convert(object, 'margin-' + direction, 'world') +
-      units.convert(object, 'padding-' + direction, 'world');
+      onlyMargin ? 0 : units.convert(object, 'padding-' + direction, 'world');
   }
   else {
     return 0;
@@ -402,8 +392,10 @@ function getContentContribution (object, minMax) {
       virtualBox[axis] = dimensions[axis];
     }
     else {
-      virtualBox[axis] = Math.max(virtualBox[axis], minDimensions[axis]);
-      virtualBox[axis] = Math.min(virtualBox[axis], maxDimensions[axis]);
+      virtualBox[axis] = Math.min(
+        Math.max(virtualBox[axis], minDimensions[axis]),
+        maxDimensions[axis]
+      );
     }
   }
 
@@ -444,19 +436,23 @@ function getBoundaries (object) {
   }
 }
 
-function makeInitialPosition () {
-  return {
+function makeInitialOffset (object, onlyMargin) {
+  var offset = {
     x: { reference: 'left', distance: 0 },
     y: { reference: 'top', distance: 0 },
     z: { reference: 'far', distance: 0 }
   };
+
+  if (object && object._isw3dObject) {
+    offset.x.distance += getSpacer(object, 'left', onlyMargin);
+    offset.y.distance += getSpacer(object, 'top', onlyMargin);
+    offset.z.distance += getSpacer(object, 'far', onlyMargin);
+  }
+
+  return offset;
 }
 
-/*
- * Returns the world position that the child should have
- * given its relative position to the parent.
- */
-function makeWorldPosition (object, offset) {
+function makePosition (object, offset) {
   var position = {};
 
   for (let axis of AXES) {
@@ -464,6 +460,7 @@ function makeWorldPosition (object, offset) {
     if (!object._isw3dObject) {
       position[axis] += object.boundaries[offset[axis].reference];
     }
+
     switch (offset[axis].reference) {
       case 'right':
       case 'top':
@@ -472,16 +469,25 @@ function makeWorldPosition (object, offset) {
         break;
     }
   }
+  
   return position;
+}
+
+function assignPosition (object, position) {
+  for (let axis of AXES) {
+    object.position[axis] = position[axis];
+  }
 }
 
 function positionLine (
   object,
-  offset,
+  receivedOffset,
   minContributions,
   firstChild,
   lastChild
 ) {
+  var offset = JSON.parse(JSON.stringify(receivedOffset));
+
   const axes = getAxes(object);
   const availableSpace = Math.max(
     object.containerSpace[axes['main']] - minContributions, 0);
@@ -520,10 +526,8 @@ function positionLine (
       child.arrangeChildren();
     }
 
-    let childPosition = makeWorldPosition(child, offset);
-    for (let axis of AXES) {
-      child.position[axis] = childPosition[axis];
-    }
+    let childPosition = makePosition(child, offset);
+    assignPosition(child, childPosition);
 
     offset[axes['main']].distance += child.outerSize[axes['main']];
     crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
@@ -538,14 +542,14 @@ function positionChildren (object) {
   const objectAxes = getAxes(object);
   const wrap = (object.getStyle('wrap') === 'wrap');
 
-  var offset = makeInitialPosition();
-  offset.x.distance += getSpacer(object, 'left');
-  offset.y.distance += getSpacer(object, 'top');
-  offset.z.distance += getSpacer(object, 'far');
+  var offset = makeInitialOffset(object);
 
   // At this time, we can only know for sure the object's main axis
   // dimensions. After positioning the children we will know the rest.
-  var objectCrossSize = 0;
+  var objectNewSizes = {
+    cross: 0,
+    other: 0
+  };
   var objectOtherSize = 0;
 
   var minContributions = 0;
@@ -567,8 +571,8 @@ function positionChildren (object) {
         lastPositionedChild + 1, i - 1);
 
       offset[objectAxes['cross']]['distance'] += lineDimensions.crossSize;
-      objectCrossSize += lineDimensions.crossSize;
-      objectOtherSize += lineDimensions.otherSize;
+      objectNewSizes.cross += lineDimensions.crossSize;
+      objectNewSizes.other += lineDimensions.otherSize;
 
       lastPositionedChild = i - 1;
       minContributions = child.minContentContribution[objectAxes.main];
@@ -579,15 +583,23 @@ function positionChildren (object) {
   }
   var finalLineDimensions = positionLine(object, offset, minContributions,
     lastPositionedChild + 1, object.children.length - 1);
-  objectCrossSize += finalLineDimensions.crossSize;
-  objectOtherSize += finalLineDimensions.otherSize;
+  objectNewSizes.cross += finalLineDimensions.crossSize;
+  objectNewSizes.other += finalLineDimensions.otherSize;
 
   var newOuterDimensions = {};
-  newOuterDimensions[objectAxes['main']] = Math.min(
-    object.maxContentContribution[objectAxes['main']],
-    object.availableSpace[objectAxes['main']]);
-  newOuterDimensions[objectAxes['cross']] = objectCrossSize;
-  newOuterDimensions[objectAxes['other']] = objectOtherSize;
+  newOuterDimensions[objectAxes['main']] = Math.max(
+    object.minContentContribution[objectAxes['main']],
+    Math.min(
+      object.maxContentContribution[objectAxes['main']],
+      object.availableSpace[objectAxes['main']]
+    )
+  );
+  const spacers =
+    addSpacers(getSpacers(object, 'margin'), getSpacers(object, 'padding'));
+  for (let axis of ['cross', 'other']) {
+    newOuterDimensions[objectAxes[axis]] = objectNewSizes[axis] +
+      spacers[objectAxes[axis]];
+  }
   object.outerSize = newOuterDimensions;
 }
 
@@ -620,6 +632,9 @@ function updateBackground (object) {
     else {
       object.add(newBg);
     }
+
+    assignPosition(newBg, makePosition(newBg, makeInitialOffset(object, true)));
+
   }
 }
 
