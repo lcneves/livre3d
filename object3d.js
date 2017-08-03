@@ -64,18 +64,8 @@ const object3DPrototype = {
     }
   },
 
-  w3dUpdateChildren () {
-    this.w3dAllNeedUpdate();
-    for (let child of this.children) {
-      if (child._isw3dObject) {
-        child.w3dUpdateChildren();
-      }
-    }
-  },
-
   resize () {
-    this.w3dUpdateChildren();
-
+    this.w3dAllNeedUpdate();
     for (let child of this.children) {
       child.resize();
     }
@@ -109,7 +99,7 @@ const object3DPrototype = {
     objectUtils.alignChildren(this);
   },
 
-  arrangeChildren () {
+  arrange () {
     this.resize();
     this.positionChildren();
   },

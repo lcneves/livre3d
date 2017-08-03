@@ -13,7 +13,7 @@ const windowUtils = require('./window-utils.js');
 const REM_SIZE = 16;
 
 function parseSize (size) {
-  const supportedFormats = ['px', 'rem', 'em', 'vw', 'vh', '%'];
+  const supportedFormats = ['px', 'rem', 'em', 'vw', 'vh', 'vd', '%'];
 
   if (typeof size === 'number') {
     return {
@@ -88,29 +88,49 @@ function convert (object, parameter, unit) {
       break;
 
     case 'vw':
-      quantum = parsed.quantum * windowUtils.worldToPixels;
+      quantum = parsed.quantum * windowUtils.windowWidth / 100;
       break;
 
     case 'vh':
-      quantum = parsed.quantum *
-        windowUtils.worldToPixels / windowUtils.aspectRatio;
+      quantum = parsed.quantum * windowUtils.windowHeight / 100;
+      break;
+
+    case 'vd': // Viewport depth, or camera.far - camera.near in pixels
+      quantum = parsed.quantum * windowUtils.windowDepth / 100;
       break;
 
     case '%':
-      var multiplier = quantum / 100;
-      var currentObject = object;
-      var parentObject;
-      while (currentObject._parent) {
-        parentObject = currentObject._parent;
-        var parentSize = parseSize(parentObject, parameter);
-        if (parentSize.unit === '%') {
-          multiplier *= parentSize.quantum / 100;
+      var axis = null;
+      if (parameter.endsWith('width')) {
+        axis = 'x';
+      }
+      else if (parameter.endsWith('height')) {
+        axis = 'y';
+      }
+      else if (parameter.endsWith('depth')) {
+        axis = 'z';
+      }
+      if (axis) {
+        quantum = object._parent.innerSize[axis] * windowUtils.worldToPixels *
+          parsed.quantum / 100;
+      }
+
+      else {
+        var multiplier = quantum / 100;
+        var currentObject = object;
+        var parentObject;
+        while (currentObject._parent) {
+          parentObject = currentObject._parent;
+          var parentSize = parseSize(parentObject, parameter);
+          if (parentSize.unit === '%') {
+            multiplier *= parentSize.quantum / 100;
+          }
+          else {
+            quantum = convert(parentObject, parameter, unit) * multiplier;
+            break;
+          }
+          currentObject = parentObject;
         }
-        else {
-          quantum = convert(parentObject, parameter, unit) * multiplier;
-          break;
-        }
-        currentObject = parentObject;
       }
       break;
   }

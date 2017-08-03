@@ -3,10 +3,8 @@
 const Object3D = require('./object3d.js');
 
 class Body extends Object3D {
-  constructor (aspectRatio, dimensions) {
+  constructor () {
     super();
-    this._aspect = aspectRatio;
-    this._bodyDimensions = dimensions;
 
     this._ht3d = {
       tag: 'body',
@@ -14,37 +12,14 @@ class Body extends Object3D {
       id: ''
     };
     this.makeStyle();
+
+    this._isBody = true;
   }
 
   align () {}
 
-  get boundaries () {
-    return {
-      left: 0,
-      right: this._bodyDimensions.width,
-      top: 0,
-      bottom: this._bodyDimensions.width / this._aspect,
-      far: 0,
-      near: this._bodyDimensions.far - this._bodyDimensions.near
-    };
-  }
-
-  get outerSize () {
-    return {
-      x: this._bodyDimensions.width,
-      y: this._bodyDimensions.width / this._aspect,
-      z: this._bodyDimensions.far - this._bodyDimensions.near
-    };
-  }
-
-  set outerSize (newSize) {}
-
   get availableSpace () {
     return this.outerSize;
-  }
-
-  set aspectRatio (value) {
-    this._aspect = value;
   }
 }
 

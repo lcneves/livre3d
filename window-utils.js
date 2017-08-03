@@ -9,12 +9,14 @@
 'use strict';
 
 var _worldWidth = undefined;
+var _worldDepth = undefined;
 var _windowWidth = undefined;
 var _windowHeight = undefined;
 
 module.exports = {
-  init (worldWidth, windowWidth, windowHeight) {
+  init (worldWidth, worldDepth, windowWidth, windowHeight) {
     _worldWidth = worldWidth;
+    _worldDepth = worldDepth;
     _windowWidth = windowWidth;
     _windowHeight = windowHeight;
   },
@@ -35,8 +37,24 @@ module.exports = {
     _windowHeight = value;
   },
 
+  get windowDepth () {
+    return _worldDepth * _windowWidth / _worldWidth;
+  },
+
   get aspectRatio () {
     return _windowWidth / _windowHeight;
+  },
+
+  get worldWidth () {
+    return _worldWidth;
+  },
+
+  get worldHeight () {
+    return _worldWidth / windowWidth * windowHeight;
+  },
+
+  get worldDepth () {
+    return _worldDepth;
   },
 
   // Returns the number of pixels that is equivalent of one world unit

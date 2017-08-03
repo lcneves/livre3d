@@ -42,7 +42,7 @@ module.exports = {
       'minContentContribution',
       'maxContentContribution'
     ];
-    if (!this._isw3dObject) {
+    if (!this._isw3dObject || this._isBody) {
       updateArray.push('outerSize');
     }
     this.w3dNeedsUpdate = updateArray;

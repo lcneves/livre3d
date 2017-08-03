@@ -189,14 +189,16 @@ function getSizesFromStyle (object) {
   }
 }
 
-function addSpacers (box, spacers) {
+function addSpacers (originalBox, spacers) {
+  var box = JSON.parse(JSON.stringify(originalBox));
   for (let axis of AXES) {
     box[axis] += spacers[axis];
   }
   return box;
 }
 
-function removeSpacers (box, spacers) {
+function removeSpacers (originalBox, spacers) {
+  var box = JSON.parse(JSON.stringify(originalBox));
   for (let axis of AXES) {
     box[axis] -= spacers[axis];
   }
@@ -533,7 +535,7 @@ function positionLine (
     child.availableSpace = childAvailableSpace;
 
     if (child._isw3dObject) {
-      child.arrangeChildren();
+      child.arrange();
     }
 
     let childPosition = makePosition(child, offset);

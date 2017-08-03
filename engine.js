@@ -18,14 +18,19 @@ const windowUtils = require('./window-utils.js');
 const messages = require('./messages.js');
 
 const far =
-theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
+  theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
 const dimensions = {
   width: theme.worldWidth ? theme.worldWidth : 100,
   far: far,
   near: far * theme.nearFarRatio
 };
 
-windowUtils.init(theme.worldWidth, window.innerWidth, window.innerHeight);
+windowUtils.init(
+  theme.worldWidth,
+  dimensions.far - dimensions.near,
+  window.innerWidth,
+  window.innerHeight
+);
 
 var updatables = [];
 
@@ -37,7 +42,7 @@ var camera = new Camera(
   dimensions
 );
 
-var body = new Body(window.innerWidth / window.innerHeight, dimensions);
+var body = new Body();
 
 var renderer = new THREE.WebGLRenderer({
   antialias: true
@@ -63,7 +68,6 @@ window.addEventListener('resize', function () {
   }
 
   if (body) {
-    body.aspectRatio = aspectRatio;
     messages.setMessage('needsArrange', body);
   }
 });
@@ -73,9 +77,9 @@ require('./utils/click.js')(THREE, renderer, camera, body);
 function arrangeObjects () {
   var objectToArrange = messages.getMessage('needsArrange');
   if (typeof objectToArrange === 'object' &&
-      typeof objectToArrange.arrangeChildren === 'function')
+      typeof objectToArrange.arrange === 'function')
   {
-    objectToArrange.arrangeChildren();
+    objectToArrange.arrange();
     objectToArrange.alignChildren();
     messages.setMessage('needsArrange', false);
   }
