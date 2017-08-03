@@ -16,6 +16,8 @@ class Body extends Object3D {
     this.makeStyle();
   }
 
+  align () {}
+
   get boundaries () {
     return {
       left: 0,
@@ -35,11 +37,11 @@ class Body extends Object3D {
     };
   }
 
+  set outerSize (newSize) {}
+
   get availableSpace () {
     return this.outerSize;
   }
-
-  set outerSize (newSize) {}
 
   set aspectRatio (value) {
     this._aspect = value;

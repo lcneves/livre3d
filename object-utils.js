@@ -229,34 +229,44 @@ function getContainerSpace (object) {
   );
 }
 
-function getStretchedSize (object) {
-  const display = object.getStyle('display');
-  const parentDirection = object._parent.getStyle('direction');
-  const alignSelf = object.getStyle('align-self');
+function alignChildren (parent) {
+  for (let child of parent.children) {
+    child.align();
+    if (child._isw3dObject) {
+      child.alignChildren();
+    }
+  }
+}
+
+function align (object) {
+  const parent = object._parent || object.parent;
+  const crossAxis = getAxes(parent)['cross'];
+  const crossSize = parent.innerSize[crossAxis];
+  const freeSpace = Math.max(crossSize - object.outerSize[crossAxis], 0);
+  const sizeSign = crossAxis === 'y' ? -1 : 1;
+  const parentDirection = parent.getStyle('direction');
+  const alignSelf = object._isw3dObject
+    ? object.getStyle('align-self') : 'initial';
   const align = alignSelf !== 'initial'
-    ? alignSelf : object._parent.getStyle('align-items');
+    ? alignSelf : parent.getStyle('align-items');
 
-  var size = object.size;
-
-  switch (display) {
-    case 'plane':
-      size.x = object.containerSize.x;
-      size.y = object.containerSize.y;
+  switch (align) {
+    case 'start':
       break;
-
-    case 'block':
-      if (align === 'stretch') {
-        if (parentDirection === 'column') {
-          size.x = object.containerSize.x;
-        }
-        else if (parentDirection === 'row') {
-          size.y = object.containerSize.y;
-        }
+    case 'center':
+      object.position[crossAxis] += freeSpace * sizeSign / 2;
+      break;
+    case 'end':
+      object.position[crossAxis] += freeSpace * sizeSign;
+      break;
+    case 'stretch':
+      if (object._isw3dObject) {
+        var size = object.outerSize;
+        size[crossAxis] += freeSpace * sizeSign;
+        object.outerSize = size;
       }
       break;
   }
-
-  return size;
 }
 
 function getSize (object) {
@@ -532,9 +542,7 @@ function positionLine (
     offset[axes['main']].distance += child.outerSize[axes['main']];
     crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
     otherSize = Math.max(otherSize, child.outerSize[axes['other']]);
-
   }
-
   return { crossSize: crossSize, otherSize: otherSize };
 }
 
@@ -670,6 +678,8 @@ function isHeader (object) {
 
 Object.assign(module.exports, {
   Background: Background,
+  align: align,
+  alignChildren: alignChildren,
   forceUpdate: forceUpdate,
   getBoundaries: getBoundaries,
   getContentContribution: getContentContribution,
@@ -680,7 +690,6 @@ Object.assign(module.exports, {
   getAxes: getAxes,
   getFontSize: getFontSize,
   getInnerSize: getInnerSize,
-  getStretchedSize: getStretchedSize,
   importPrototype: importPrototype,
   isHeader: isHeader,
   positionChildren: positionChildren,

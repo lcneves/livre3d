@@ -29,6 +29,10 @@ module.exports = {
     );
   },
 
+  align () {
+    objectUtils.align(this);
+  },
+
   w3dAllNeedUpdate () {
     var updateArray = [
       'size',
@@ -96,6 +100,7 @@ module.exports = {
     }
     this._outerSize = updatedSize;
     this.w3dAllNeedUpdate();
+    this.updateBackground();
   },
 
   get availableSpace () {

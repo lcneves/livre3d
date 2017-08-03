@@ -76,6 +76,7 @@ function arrangeObjects () {
       typeof objectToArrange.arrangeChildren === 'function')
   {
     objectToArrange.arrangeChildren();
+    objectToArrange.alignChildren();
     messages.setMessage('needsArrange', false);
   }
 }

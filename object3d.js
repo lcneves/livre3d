@@ -105,10 +105,13 @@ const object3DPrototype = {
     objectUtils.positionChildren(this);
   },
 
+  alignChildren () {
+    objectUtils.alignChildren(this);
+  },
+
   arrangeChildren () {
     this.resize();
     this.positionChildren();
-    this.updateBackground();
   },
 
   getProperty (property) {
