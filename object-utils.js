@@ -503,7 +503,8 @@ function positionLine (
   const axes = getAxes(object);
   const availableSpace = Math.max(
     object.containerSpace[axes['main']] - minContributions, 0);
-  var totalGrowth = 0;
+  var totalGrowth = 0; // TODO: grow should be line-based
+  // TODO: should grow to maxContentContribution independently of grow
   for (let i = firstChild; i <= lastChild; i++) {
     let child = object.children[i];
     let grow = child._isw3dObject ? child.getStyle('grow') : 0;
@@ -574,7 +575,7 @@ function positionChildren (object) {
 
     if (wrap &&
       minContributions + child.minContentContribution[objectAxes.main] >
-        object.innerSize[objectAxes.main]
+        object.containerSpace[objectAxes.main]
     ) {
       let lineDimensions = positionLine(
         object, offset, minContributions,
