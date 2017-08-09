@@ -246,7 +246,6 @@ function align (object) {
   const crossSize = parent.innerSize[crossAxis];
   const freeSpace = Math.max(crossSize - object.outerSize[crossAxis], 0);
   const sizeSign = crossAxis === 'y' ? -1 : 1;
-  const parentDirection = parent.getStyle('direction');
   const alignSelf = object._isw3dObject
     ? object.getStyle('align-self') : 'initial';
   const align = alignSelf !== 'initial'
@@ -287,18 +286,6 @@ function getInnerSize (object) {
   else {
     return object.size;
   }
-}
-
-function getMainAxisInnerSize (object) {
-  var axes = getAxes(object);
-
-  return Math.max(
-    object.minContentContribution[axes['main']],
-    Math.min(
-      object.maxContentContribution[axes['main']],
-      object.availableSpace[axes['main']]
-    )
-  );
 }
 
 function getOuterSize (object) {
@@ -380,7 +367,7 @@ function getMaxContentContribution (object, minDimensions, wrap, mainAxis) {
 function getContentContribution (object, minMax) {
   if (minMax !== 'min' && minMax !== 'max') {
     throw new Error('Expected parameter to be \'min\' or \'max\', got: ' +
-      JSON.Stringify(minMax));
+      JSON.stringify(minMax));
   }
 
   if (!object._isw3dObject) {
@@ -481,7 +468,7 @@ function makePosition (object, offset) {
         break;
     }
   }
-  
+
   return position;
 }
 
@@ -539,6 +526,8 @@ function positionLine (
       child.arrange();
     }
 
+    //TODO: justify-content
+
     let childPosition = makePosition(child, offset);
     assignPosition(child, childPosition);
 
@@ -561,7 +550,6 @@ function positionChildren (object) {
     cross: 0,
     other: 0
   };
-  var objectOtherSize = 0;
 
   var minContributions = 0;
   var lastPositionedChild = -1;
