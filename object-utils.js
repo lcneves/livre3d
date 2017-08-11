@@ -319,13 +319,15 @@ function getOuterSize (object) {
   }
 }
 
-function getMinContentContribution (object, minDimensions, wrap, mainAxis) {
+function getMinContentContribution (object, wrap, mainAxis) {
   var virtualBox = makeInitialVirtualBox();
 
   for (let child of object.children) {
     if (!child._ignoreSize) {
       for (let axis of AXES) {
-        if (axis === mainAxis && wrap === 'nowrap') {
+        if (
+          axis === mainAxis && wrap === 'nowrap'
+        ) {
           virtualBox[axis] += child.minContentContribution[axis];
         }
         else {
@@ -341,7 +343,7 @@ function getMinContentContribution (object, minDimensions, wrap, mainAxis) {
   return virtualBox;
 }
 
-function getMaxContentContribution (object, minDimensions, wrap, mainAxis) {
+function getMaxContentContribution (object, wrap, mainAxis) {
   var virtualBox = makeInitialVirtualBox();
 
   for (let child of object.children) {
@@ -353,7 +355,6 @@ function getMaxContentContribution (object, minDimensions, wrap, mainAxis) {
         else {
           virtualBox[axis] = Math.max(
             virtualBox[axis],
-            minDimensions[axis],
             child.maxContentContribution[axis]
           );
         }
@@ -376,16 +377,16 @@ function getContentContribution (object, minMax) {
 
   const wrap = object.getStyle('wrap');
   const mainAxis = getAxes(object)['main'];
-  const minDimensions = getWorldDimensions(object, 'min');
-  const maxDimensions = getWorldDimensions(object, 'max');
 
   var virtualBox = minMax === 'min'
-    ? getMinContentContribution(object, minDimensions, wrap, mainAxis)
-    : getMaxContentContribution(object, minDimensions, wrap, mainAxis);
+    ? getMinContentContribution(object, wrap, mainAxis)
+    : getMaxContentContribution(object, wrap, mainAxis);
 
   virtualBox = addSpacers(virtualBox, getSpacers(object, 'padding'));
 
   const dimensions = getWorldDimensions(object);
+  const minDimensions = getWorldDimensions(object, 'min');
+  const maxDimensions = getWorldDimensions(object, 'max');
   for (let axis of AXES) {
     if (dimensions[axis] !== undefined) {
       virtualBox[axis] = dimensions[axis];
@@ -478,28 +479,35 @@ function assignPosition (object, position) {
   }
 }
 
+function getMaxMinDifference (object, axis) {
+  return Math.max(
+    object.maxContentContribution[axis] -
+    object.minContentContribution[axis],
+    0);
+}
+
 function positionLine (
   object,
   receivedOffset,
+  objectNewSizes,
   minContributions,
   firstChild,
   lastChild
 ) {
-  var offset = JSON.parse(JSON.stringify(receivedOffset));
-
   const axes = getAxes(object);
+
   const availableSpace = Math.max(
     object.containerSpace[axes['main']] - minContributions, 0);
-  var totalGrowth = 0; // TODO: grow should be line-based
-  // TODO: should grow to maxContentContribution independently of grow
+
+  var totalGrowthToMax = 0;
   for (let i = firstChild; i <= lastChild; i++) {
     let child = object.children[i];
-    let grow = child._isw3dObject ? child.getStyle('grow') : 0;
-    totalGrowth += grow;
+    totalGrowthToMax += getMaxMinDifference(child, axes['main']);
   }
 
-  var crossSize = 0;
-  var otherSize = 0;
+  const availableToMax = Math.min(totalGrowthToMax, availableSpace);
+  const maxGrowthFactor = totalGrowthToMax > 0
+    ? availableToMax / totalGrowthToMax : 0;
 
   for (let i = firstChild; i <= lastChild; i++) {
     let child = object.children[i];
@@ -507,18 +515,13 @@ function positionLine (
       continue;
     }
 
-    let grow = availableSpace > 0 && child._isw3dObject
-      ? child.getStyle('grow') : 0;
-    let growthFactor = totalGrowth
-      ? grow / totalGrowth : 0;
-
     let childAvailableSpace = {};
     childAvailableSpace[axes['main']] =
       child.minContentContribution[axes['main']] +
-        availableSpace * growthFactor;
+      getMaxMinDifference(child, axes['main']) * maxGrowthFactor;
     for (let axis of ['cross', 'other']) {
       childAvailableSpace[axes[axis]] = Math.max(
-        object.containerSpace[axes[axis]] - offset[axes[axis]].distance, 0);
+        object.containerSpace[axes[axis]] - objectNewSizes[axis], 0);
     }
     child.availableSpace = childAvailableSpace;
 
@@ -528,25 +531,64 @@ function positionLine (
 
     //TODO: justify-content
 
+  }
+
+  var childrenSizeMain = 0;
+  var totalCSSGrow = 0;
+  for (let i = firstChild; i <= lastChild; i++) {
+    let child = object.children[i];
+    childrenSizeMain += child.outerSize[axes['main']];
+    totalCSSGrow += child._isw3dObject ? child.getStyle('grow') : 0;
+  }
+
+  var mainSize = 0;
+  var crossSize = 0;
+  var otherSize = 0;
+  var offset = JSON.parse(JSON.stringify(receivedOffset));
+  offset[axes['cross']].distance += objectNewSizes.cross;
+  var availableToGrow = Math.max(
+    object.containerSpace[axes['main']] - childrenSizeMain, 0);
+    
+  for (let i = firstChild; i <= lastChild; i++) {
+    let child = object.children[i];
+
+    if (child._isw3dObject) {
+      let grow = child._isw3dObject
+        ? child.getStyle('grow') : 0;
+      let growFactorCSS = totalCSSGrow
+        ? grow / totalCSSGrow : 0;
+      let newOuterDimensions = {};
+      newOuterDimensions[axes['main']] = child.outerSize[axes['main']] +
+        availableToGrow * growFactorCSS;
+      for (let axis of ['cross', 'other']) {
+        newOuterDimensions[axes[axis]] = child.outerSize[axes[axis]];
+      }
+      child.outerSize = newOuterDimensions;
+    }
+
     let childPosition = makePosition(child, offset);
     assignPosition(child, childPosition);
 
     offset[axes['main']].distance += child.outerSize[axes['main']];
+    mainSize += child.outerSize[axes['main']];
     crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
     otherSize = Math.max(otherSize, child.outerSize[axes['other']]);
   }
-  return { crossSize: crossSize, otherSize: otherSize };
+
+
+  return { mainSize: mainSize, crossSize: crossSize, otherSize: otherSize };
 }
 
 function positionChildren (object) {
   const objectAxes = getAxes(object);
   const wrap = (object.getStyle('wrap') === 'wrap');
 
-  var offset = makeInitialOffset(object);
+  var initialOffset = makeInitialOffset(object);
 
   // At this time, we can only know for sure the object's main axis
   // dimensions. After positioning the children we will know the rest.
   var objectNewSizes = {
+    main: 0,
     cross: 0,
     other: 0
   };
@@ -566,10 +608,11 @@ function positionChildren (object) {
         object.containerSpace[objectAxes.main]
     ) {
       let lineDimensions = positionLine(
-        object, offset, minContributions,
+        object, initialOffset, objectNewSizes, minContributions,
         lastPositionedChild + 1, i - 1);
 
-      offset[objectAxes['cross']]['distance'] += lineDimensions.crossSize;
+      objectNewSizes.main = Math.max(
+        objectNewSizes.main, lineDimensions.mainSize);
       objectNewSizes.cross += lineDimensions.crossSize;
       objectNewSizes.other += lineDimensions.otherSize;
 
@@ -580,22 +623,18 @@ function positionChildren (object) {
       minContributions += child.minContentContribution[objectAxes.main];
     }
   }
-  var finalLineDimensions = positionLine(object, offset, minContributions,
+  var finalLineDimensions = positionLine(
+    object, initialOffset, objectNewSizes, minContributions,
     lastPositionedChild + 1, object.children.length - 1);
+  objectNewSizes.main = Math.max(
+    objectNewSizes.main, finalLineDimensions.mainSize);
   objectNewSizes.cross += finalLineDimensions.crossSize;
   objectNewSizes.other += finalLineDimensions.otherSize;
 
   var newOuterDimensions = {};
-  newOuterDimensions[objectAxes['main']] = Math.max(
-    object.minContentContribution[objectAxes['main']],
-    Math.min(
-      object.maxContentContribution[objectAxes['main']],
-      object.availableSpace[objectAxes['main']]
-    )
-  );
   const spacers =
     addSpacers(getSpacers(object, 'margin'), getSpacers(object, 'padding'));
-  for (let axis of ['cross', 'other']) {
+  for (let axis of ['main', 'cross', 'other']) {
     newOuterDimensions[objectAxes[axis]] = objectNewSizes[axis] +
       spacers[objectAxes[axis]];
   }
