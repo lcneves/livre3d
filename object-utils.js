@@ -486,13 +486,45 @@ function getMaxMinDifference (object, axis) {
     0);
 }
 
+function getJustifyOffset (
+  child,
+  firstChild,
+  childrenCount,
+  availableToJustify,
+  justifyRule
+) {
+  if (!availableToJustify) {
+    return 0;
+  }
+  switch (justifyRule) {
+    case 'end':
+      return child === firstChild ? availableToJustify : 0;
+    case 'center':
+      return child === firstChild ? availableToJustify / 2 : 0;
+    case 'space-between':
+      return child === firstChild
+        ? 0
+        : availableToJustify / (childrenCount - 1);
+    case 'space-around':
+      return child === firstChild
+        ? availableToJustify / (childrenCount * 2)
+        : availableToJustify / childrenCount;
+    case 'space-evenly':
+      return availableToJustify / (childrenCount + 1);
+    case 'start':
+    default:
+      return 0;
+  }
+}
+
 function positionLine (
   object,
   receivedOffset,
   objectNewSizes,
   minContributions,
   firstChild,
-  lastChild
+  lastChild,
+  justifyRule
 ) {
   const axes = getAxes(object);
 
@@ -528,9 +560,6 @@ function positionLine (
     if (child._isw3dObject) {
       child.arrange();
     }
-
-    //TODO: justify-content
-
   }
 
   var childrenSizeMain = 0;
@@ -548,7 +577,7 @@ function positionLine (
   offset[axes['cross']].distance += objectNewSizes.cross;
   var availableToGrow = Math.max(
     object.containerSpace[axes['main']] - childrenSizeMain, 0);
-    
+
   for (let i = firstChild; i <= lastChild; i++) {
     let child = object.children[i];
 
@@ -565,23 +594,92 @@ function positionLine (
       }
       child.outerSize = newOuterDimensions;
     }
-
-    let childPosition = makePosition(child, offset);
-    assignPosition(child, childPosition);
-
-    offset[axes['main']].distance += child.outerSize[axes['main']];
-    mainSize += child.outerSize[axes['main']];
-    crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
-    otherSize = Math.max(otherSize, child.outerSize[axes['other']]);
   }
 
+  childrenSizeMain = 0;
+  var childrenCount = 0;
+  for (let i = firstChild; i <= lastChild; i++) {
+    let child = object.children[i];
+    if (!child._isBackground) {
+      childrenSizeMain += child.outerSize[axes['main']];
+      childrenCount++;
+    }
+  }
+  var availableToJustify = Math.max(
+    object.containerSpace[axes['main']] - childrenSizeMain, 0);
+
+  for (let i = firstChild; i <= lastChild; i++) {
+    let child = object.children[i];
+    if (!child._isBackground) {
+      offset[axes['main']].distance += getJustifyOffset(
+        i,
+        firstChild,
+        childrenCount,
+        availableToJustify,
+        justifyRule
+      );
+
+      let childPosition = makePosition(child, offset);
+      assignPosition(child, childPosition);
+      offset[axes['main']].distance += child.outerSize[axes['main']];
+
+      mainSize += child.outerSize[axes['main']];
+      crossSize = Math.max(crossSize, child.outerSize[axes['cross']]);
+      otherSize = Math.max(otherSize, child.outerSize[axes['other']]);
+    }
+  }
 
   return { mainSize: mainSize, crossSize: crossSize, otherSize: otherSize };
+}
+
+function getAlignmentRules (object) {
+  // text-align supercedes justify-content
+  var general;
+  var last;
+  const textAlign = object.getStyle('text-align');
+  const justifyContent = object.getStyle('justify-content');
+
+  if (textAlign !== 'initial') {
+    switch (textAlign) {
+      case 'end':
+      case 'right':
+        general = last = 'end';
+        break;
+
+      case 'center':
+        general = last = 'center';
+        break;
+
+      case 'justify-all':
+        general = last = 'space-between';
+        break;
+
+      case 'justify':
+        general = 'space-between';
+        last = 'start';
+        break;
+
+      case 'start':
+      case 'left':
+      default:
+        general = last = 'start';
+        break;
+    }
+  }
+  else {
+    general = last = justifyContent;
+  }
+
+  return {
+    general: general,
+    lastLine: last
+  };
 }
 
 function positionChildren (object) {
   const objectAxes = getAxes(object);
   const wrap = (object.getStyle('wrap') === 'wrap');
+  const alignmentRules = getAlignmentRules(object);
 
   var initialOffset = makeInitialOffset(object);
 
@@ -608,8 +706,14 @@ function positionChildren (object) {
         object.containerSpace[objectAxes.main]
     ) {
       let lineDimensions = positionLine(
-        object, initialOffset, objectNewSizes, minContributions,
-        lastPositionedChild + 1, i - 1);
+        object,
+        initialOffset,
+        objectNewSizes,
+        minContributions,
+        lastPositionedChild + 1,
+        i - 1,
+        alignmentRules.general
+      );
 
       objectNewSizes.main = Math.max(
         objectNewSizes.main, lineDimensions.mainSize);
@@ -624,8 +728,14 @@ function positionChildren (object) {
     }
   }
   var finalLineDimensions = positionLine(
-    object, initialOffset, objectNewSizes, minContributions,
-    lastPositionedChild + 1, object.children.length - 1);
+    object,
+    initialOffset,
+    objectNewSizes,
+    minContributions,
+    lastPositionedChild + 1,
+    object.children.length - 1,
+    alignmentRules.lastLine
+  );
   objectNewSizes.main = Math.max(
     objectNewSizes.main, finalLineDimensions.mainSize);
   objectNewSizes.cross += finalLineDimensions.crossSize;
