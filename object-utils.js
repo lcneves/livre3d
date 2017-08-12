@@ -145,8 +145,10 @@ function makeInitialVirtualBox () {
 
 function getSpacer (object, direction, onlyMargin) {
   if (object._isw3dObject) {
-    return units.convert(object, 'margin-' + direction, 'world') +
-      onlyMargin ? 0 : units.convert(object, 'padding-' + direction, 'world');
+    var padding = onlyMargin
+      ? 0 : units.convert(object, 'padding-' + direction, 'world');
+    return units.convert(object, 'margin-' + direction, 'world') + padding;
+
   }
   else {
     return 0;
