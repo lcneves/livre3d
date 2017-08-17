@@ -9,13 +9,11 @@
 
 'use strict';
 
-module.exports = function (theme) {
+module.exports = function (app) {
 
-  require('./theme.js').init(theme);
+  require('./theme.js').init(app.theme);
+  require('./templates.js').init(app.templates);
 
   const engine = require('./engine.js');
-
-  require('livre-client')({
-    engine: engine
-  });
+  return engine;
 };

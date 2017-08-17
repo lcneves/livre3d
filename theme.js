@@ -12,9 +12,7 @@ const THREE = require('three');
 const fontLoader = new THREE.FontLoader();
 
 module.exports.init = function (theme) {
-  for (let key in theme) {
-    Object.assign(module.exports, theme[key]);
-  }
+  Object.assign(module.exports, theme);
 
   // Parses 3D font JSON into three.js Font objects
   if (module.exports.resources && module.exports.resources.fonts) {

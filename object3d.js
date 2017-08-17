@@ -13,7 +13,7 @@ const style = require('./style.js');
 const objectUtils = require('./object-utils.js');
 const objectCommons = require('./object-commons.js');
 const messages = require('./messages.js');
-const theme = require('./theme.js');
+const templates = require('./templates.js');
 
 module.exports = class Object3D extends THREE.Object3D {
   constructor (options) {
@@ -34,7 +34,7 @@ module.exports = class Object3D extends THREE.Object3D {
     }
 
     if (options.template) {
-      const hypertext = theme.templates[options.template]();
+      const hypertext = templates[options.template]();
       return ht3d.parse(hypertext, parentObject);
     }
 

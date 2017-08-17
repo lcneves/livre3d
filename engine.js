@@ -176,25 +176,17 @@ function resetScene () {
   render();
 }
 
-function importTemplate(template, parentObject) {
+function importTemplate(templateName, parentObject) {
+  parentObject = parentObject || body;
+
   parentObject.add(new Object3D({
-    template: template,
+    template: templateName,
     setParent: parentObject
   }), { rearrange: true });
 }
 
-function makeShell () {
-  resetScene();
-  importTemplate('shell', body);
-  setTimeout(() => {
-    console.dir({
-      bodyPosition: body.position,
-      childPosition: body.children[0].position,
-      grandChild0Pos: body.children[0].children[0].position,
-      grandChild1Pos: body.children[0].children[1].position,
-      body: body
-    });
-  }, 1500);
-}
+module.exports = {
+  reset: resetScene,
+  importTemplate: importTemplate
+};
 
-module.exports.makeShell = makeShell;
