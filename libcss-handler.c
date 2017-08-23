@@ -203,6 +203,88 @@ css_error compute_font_size(void *pw, const css_hint *parent,
 	return CSS_OK;
 }
 
+lwc_string* NULL_STR;
+lwc_intern_string("", 0, &NULL_STR);
+
+/*
+ * Generic get function to be used by callbacks. Must return string.
+ */
+lwc_string* get_string (
+    void *node,
+    const char* (*js_fun)(const char*)
+)
+{
+  lwc_string* n = node;
+  const char* node_string = lwc_string_data(n);
+
+  const char* js_results =
+    (*js_fun)(node_string);
+
+  if (*js_results == "\0")
+  {
+    return NULL;
+  }
+
+  lwc_string *results;
+  lwc_intern_string(js_results, strlen(js_results), &results);
+
+  return results;
+}
+
+/*
+ * Generic search function to be used by callbacks. Must return boolean.
+ */
+bool match_bool (
+    void *node,
+    void *search_parameter,
+    void *match_parameter,
+    const char* (*js_fun)(const char*, const char*, const char*)
+)
+{
+  lwc_string* n = node;
+  const char* node_string = lwc_string_data(n);
+
+  lwc_string* s = search_parameter;
+  const char* search_string = s == NULL
+    ? lwc_string_data(NULL_STR)
+    : lwc_string_data(s);
+
+  lwc_string* m = match_parameter;
+  const char* match_string = m == NULL
+    ? lwc_string_data(NULL_STR)
+    : lwc_string_data(m);
+
+  return (*js_fun)(node_string, search_string,  match_string);
+}
+
+/*
+ * Generic search function to be used by callbacks. Must return string.
+ */
+lwc_string* match_string (
+    void *node,
+    void *search_parameter,
+    const char* (*js_fun)(const char*, const char*)
+)
+{
+  lwc_string* n = node;
+  const char* node_string = lwc_string_data(n);
+  lwc_string* s = search_parameter;
+  const char* match_string = lwc_string_data(s);
+
+  const char* js_results =
+    (*js_fun)(node_string, match_string);
+
+  if (*js_results == "\0")
+  {
+    return NULL;
+  }
+
+  lwc_string *results;
+  lwc_intern_string(js_results, strlen(js_results), &results);
+
+  return results;
+}
+
 /******************************************************************************
  * Style selection callbacks                                                  *
  ******************************************************************************/
@@ -218,17 +300,13 @@ css_error compute_font_size(void *pw, const css_hint *parent,
  */
 css_error node_name(void *pw, void *node, css_qname *qname)
 {
-	lwc_string* n = node;
-  const char* node_string = lwc_string_data(n);
-  const char* js_name = js_node_name(node_string);
+  const char* namespace = "nodes";
+  lwc_string *namespace_ptr;
+  lwc_intern_string(namespace, strlen(namespace), &namespace_ptr);
+  qname->ns = namespace_ptr;
 
-  lwc_string *element_name;
-  lwc_intern_string(js_name, strlen(js_name), &element_name);
-
-  /* TODO: Maybe implement namespace? */
-  qname->ns = NULL;
-	qname->name = element_name;
-	return CSS_OK;
+  qname->name = get_string(node, js_node_name);
+  return CSS_OK;
 }
 
 /**
@@ -316,21 +394,8 @@ css_error node_classes(void *pw, void *node,
  */
 css_error node_id(void *pw, void *node, lwc_string **id)
 {
-	lwc_string* n = node;
-  const char* node_string = lwc_string_data(n);
-  const char* js_id = js_node_id(node_string);
-
-  if (*js_id == "\0")
-  {
-    *id = NULL;
-    return CSS_OK;
-  }
-
-  lwc_string *element_id;
-  lwc_intern_string(js_id, strlen(js_id), &element_id);
-
-	*id = element_id;
-	return CSS_OK;
+  *id = get_string(node, js_node_id);
+  return CSS_OK;
 }
 
 /**
@@ -347,25 +412,8 @@ css_error node_id(void *pw, void *node, lwc_string **id)
 css_error named_ancestor_node(void *pw, void *node,
 		const css_qname *qname, void **ancestor)
 {
-  lwc_string* n = node;
-  const char* node_string = lwc_string_data(n);
-  lwc_string* a = qname->name;
-  const char* ancestor_string = lwc_string_data(a);
-
-  const char* js_ancestor =
-    js_named_ancestor_node(node_string, ancestor_string);
-
-  if (*js_ancestor == "\0")
-  {
-    *ancestor = NULL;
-    return CSS_OK;
-  }
-
-  lwc_string *element_ancestor;
-  lwc_intern_string(js_ancestor, strlen(js_ancestor), &element_ancestor);
-
-	*ancestor = element_ancestor;
-	return CSS_OK;
+  *ancestor = match_string(node, qname->name, js_named_ancestor_node);
+  return CSS_OK;
 }
 
 /**
@@ -382,29 +430,15 @@ css_error named_ancestor_node(void *pw, void *node,
 css_error named_parent_node(void *pw, void *node,
 		const css_qname *qname, void **parent)
 {
-  lwc_string* n = node;
-  const char* node_string = lwc_string_data(n);
-  lwc_string* p = qname->name;
-  const char* parent_string = lwc_string_data(p);
-
-  const char* js_parent =
-    js_named_parent_node(node_string, parent_string);
-
-  if (*js_parent == "\0")
-  {
-    *parent = NULL;
-    return CSS_OK;
-  }
-
-  lwc_string *element_parent;
-  lwc_intern_string(js_parent, strlen(js_parent), &element_parent);
-
-	*parent = element_parent;
-	return CSS_OK;
+  *parent = match_string(node, qname->name, js_named_parent_node);
+  return CSS_OK;
 }
 
 /**
  * Callback to find a named sibling node.
+ *
+ * NOTE: According to the NetSurf source code, this function returns a node
+ * only if the Node.previousSibling is the searched node!
  *
  * \param pw       HTML document
  * \param node     DOM node
@@ -417,62 +451,15 @@ css_error named_parent_node(void *pw, void *node,
 css_error named_sibling_node(void *pw, void *node,
 		const css_qname *qname, void **sibling)
 {
-	dom_node *n = node;
-	dom_node *prev;
-	dom_exception err;
-
-	*sibling = NULL;
-
-	/* Find sibling element */
-	err = dom_node_get_previous_sibling(n, &n);
-	if (err != DOM_NO_ERR)
-		return CSS_OK;
-
-	while (n != NULL) {
-		dom_node_type type;
-
-		err = dom_node_get_node_type(n, &type);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		if (type == DOM_ELEMENT_NODE)
-			break;
-
-		err = dom_node_get_previous_sibling(n, &prev);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		dom_node_unref(n);
-		n = prev;
-	}
-
-	if (n != NULL) {
-		dom_string *name;
-
-		err = dom_node_get_node_name(n, &name);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		dom_node_unref(n);
-
-		if (dom_string_caseless_lwc_isequal(name, qname->name)) {
-			*sibling = n;
-		}
-
-		dom_string_unref(name);
-	}
-
-	return CSS_OK;
+  *sibling = match_string(node, qname->name, js_named_sibling_node);
+  return CSS_OK;
 }
 
 /**
  * Callback to find a named generic sibling node.
+ *
+ * NOTE: According to the NetSurf source code, this function returns any
+ * sibling node that matches the search!
  *
  * \param pw       HTML document
  * \param node     DOM node
@@ -485,54 +472,8 @@ css_error named_sibling_node(void *pw, void *node,
 css_error named_generic_sibling_node(void *pw, void *node,
 		const css_qname *qname, void **sibling)
 {
-	dom_node *n = node;
-	dom_node *prev;
-	dom_exception err;
-
-	*sibling = NULL;
-
-	err = dom_node_get_previous_sibling(n, &n);
-	if (err != DOM_NO_ERR)
-		return CSS_OK;
-
-	while (n != NULL) {
-		dom_node_type type;
-		dom_string *name;
-
-		err = dom_node_get_node_type(n, &type);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		if (type == DOM_ELEMENT_NODE) {
-			err = dom_node_get_node_name(n, &name);
-			if (err != DOM_NO_ERR) {
-				dom_node_unref(n);
-				return CSS_OK;
-			}
-
-			if (dom_string_caseless_lwc_isequal(name,
-					qname->name)) {
-				dom_string_unref(name);
-				dom_node_unref(n);
-				*sibling = n;
-				break;
-			}
-			dom_string_unref(name);
-		}
-
-		err = dom_node_get_previous_sibling(n, &prev);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		dom_node_unref(n);
-		n = prev;
-	}
-
-	return CSS_OK;
+  *sibling = match_string(node, qname->name, js_named_generic_sibling_node);
+  return CSS_OK;
 }
 
 /**
@@ -547,9 +488,8 @@ css_error named_generic_sibling_node(void *pw, void *node,
  */
 css_error parent_node(void *pw, void *node, void **parent)
 {
-	dom_element_parent_node(node, (struct dom_element **)parent);
-
-	return CSS_OK;
+  *parent = get_string(node, js_parent_node);
+  return CSS_OK;
 }
 
 /**
@@ -564,51 +504,14 @@ css_error parent_node(void *pw, void *node, void **parent)
  */
 css_error sibling_node(void *pw, void *node, void **sibling)
 {
-	dom_node *n = node;
-	dom_node *prev;
-	dom_exception err;
-
-	*sibling = NULL;
-
-	/* Find sibling element */
-	err = dom_node_get_previous_sibling(n, &n);
-	if (err != DOM_NO_ERR)
-		return CSS_OK;
-
-	while (n != NULL) {
-		dom_node_type type;
-
-		err = dom_node_get_node_type(n, &type);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		if (type == DOM_ELEMENT_NODE)
-			break;
-
-		err = dom_node_get_previous_sibling(n, &prev);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_OK;
-		}
-
-		dom_node_unref(n);
-		n = prev;
-	}
-
-	if (n != NULL) {
-		/** \todo Sort out reference counting */
-		dom_node_unref(n);
-
-		*sibling = n;
-	}
-
-	return CSS_OK;
+  *sibling = get_string(node, js_sibling_node);
+  return CSS_OK;
 }
 
 /**
  * Callback to determine if a node has the given name.
+ *
+ * NOTE: Element names are case insensitive in HTML
  *
  * \param pw     HTML document
  * \param node   DOM node
@@ -621,25 +524,8 @@ css_error sibling_node(void *pw, void *node, void **sibling)
 css_error node_has_name(void *pw, void *node,
 		const css_qname *qname, bool *match)
 {
-	nscss_select_ctx *ctx = pw;
-	dom_node *n = node;
-
-	if (lwc_string_isequal(qname->name, ctx->universal, match) ==
-			lwc_error_ok && *match == false) {
-		dom_string *name;
-		dom_exception err;
-
-		err = dom_node_get_node_name(n, &name);
-		if (err != DOM_NO_ERR)
-			return CSS_OK;
-
-		/* Element names are case insensitive in HTML */
-		*match = dom_string_caseless_lwc_isequal(name, qname->name);
-
-		dom_string_unref(name);
-	}
-
-	return CSS_OK;
+  *match = match_bool(node, qname->name, NULL, js_node_has_name);
+  return CSS_OK;
 }
 
 /**
@@ -656,16 +542,8 @@ css_error node_has_name(void *pw, void *node,
 css_error node_has_class(void *pw, void *node,
 		lwc_string *name, bool *match)
 {
-	dom_node *n = node;
-	dom_exception err;
-
-	/** \todo: Ensure that libdom performs case-insensitive
-	 * matching in quirks mode */
-	err = dom_element_has_class(n, name, match);
-
-	assert(err == DOM_NO_ERR);
-
-	return CSS_OK;
+  *match = match_bool(node, name, NULL, js_node_has_class);
+  return CSS_OK;
 }
 
 /**
@@ -682,24 +560,8 @@ css_error node_has_class(void *pw, void *node,
 css_error node_has_id(void *pw, void *node,
 		lwc_string *name, bool *match)
 {
-	dom_node *n = node;
-	dom_string *attr;
-	dom_exception err;
-
-	*match = false;
-
-	/** \todo Assumes an HTML DOM */
-	err = dom_html_element_get_id(n, &attr);
-	if (err != DOM_NO_ERR)
-		return CSS_OK;
-
-	if (attr != NULL) {
-		*match = dom_string_lwc_isequal(attr, name);
-
-		dom_string_unref(attr);
-	}
-
-	return CSS_OK;
+  *match = match_bool(node, name, NULL, js_node_has_id);
+  return CSS_OK;
 }
 
 /**
@@ -717,25 +579,8 @@ css_error node_has_id(void *pw, void *node,
 css_error node_has_attribute(void *pw, void *node,
 		const css_qname *qname, bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_exception err;
-
-	err = dom_string_create_interned(
-			(const uint8_t *) lwc_string_data(qname->name),
-			lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_has_attribute(n, name, match);
-	if (err != DOM_NO_ERR) {
-		dom_string_unref(name);
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	return CSS_OK;
+  *match = match_bool(node, qname->name, NULL, js_node_has_attribute);
+  return CSS_OK;
 }
 
 /**
@@ -755,43 +600,16 @@ css_error node_has_attribute_equal(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-
-	size_t vlen = lwc_string_length(value);
-
-	if (vlen == 0) {
-		*match = false;
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	*match = dom_string_caseless_lwc_isequal(atr_val, value);
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match = match_bool(node, qname->name, value, js_node_has_attribute_equal);
+  return CSS_OK;
 }
 
 /**
  * Callback to determine if a node has an attribute with the given name whose
  * value dashmatches that given.
+ *
+ * NOTE: Matches exact matches (case-insensitive) and matches that the observed
+ * value equals the expected value plus a dash ("-").
  *
  * \param pw     HTML document
  * \param node   DOM node
@@ -807,51 +625,9 @@ css_error node_has_attribute_dashmatch(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-
-	size_t vlen = lwc_string_length(value);
-
-	if (vlen == 0) {
-		*match = false;
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	/* check for exact match */
-	*match = dom_string_caseless_lwc_isequal(atr_val, value);
-
-	/* check for dashmatch */
-	if (*match == false) {
-		const char *vdata = lwc_string_data(value);
-		const char *data = (const char *) dom_string_data(atr_val);
-		size_t len = dom_string_byte_length(atr_val);
-
-		if (len > vlen && data[vlen] == '-' &&
-		    strncasecmp(data, vdata, vlen) == 0) {
-				*match = true;
-		}
-	}
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match =
+    match_bool(node, qname->name, value, js_node_has_attribute_dashmatch);
+  return CSS_OK;
 }
 
 /**
@@ -872,57 +648,9 @@ css_error node_has_attribute_includes(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-	size_t vlen = lwc_string_length(value);
-	const char *p;
-	const char *start;
-	const char *end;
-
-	*match = false;
-
-	if (vlen == 0) {
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	/* check for match */
-	start = (const char *) dom_string_data(atr_val);
-	end = start + dom_string_byte_length(atr_val);
-
-	for (p = start; p <= end; p++) {
-		if (*p == ' ' || *p == '\0') {
-			if ((size_t) (p - start) == vlen &&
-			    strncasecmp(start,
-					lwc_string_data(value),
-					vlen) == 0) {
-				*match = true;
-				break;
-			}
-
-			start = p + 1;
-		}
-	}
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match =
+    match_bool(node, qname->name, value, js_node_has_attribute_includes);
+  return CSS_OK;
 }
 
 /**
@@ -943,50 +671,9 @@ css_error node_has_attribute_prefix(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-
-	size_t vlen = lwc_string_length(value);
-
-	if (vlen == 0) {
-		*match = false;
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	/* check for exact match */
-	*match = dom_string_caseless_lwc_isequal(atr_val, value);
-
-	/* check for prefix match */
-	if (*match == false) {
-		const char *data = (const char *) dom_string_data(atr_val);
-		size_t len = dom_string_byte_length(atr_val);
-
-		if ((len >= vlen) &&
-		    (strncasecmp(data, lwc_string_data(value), vlen) == 0)) {
-			*match = true;
-		}
-	}
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match =
+    match_bool(node, qname->name, value, js_node_has_attribute_prefix);
+  return CSS_OK;
 }
 
 /**
@@ -1007,54 +694,9 @@ css_error node_has_attribute_suffix(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-
-	size_t vlen = lwc_string_length(value);
-
-	if (vlen == 0) {
-		*match = false;
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	/* check for exact match */
-	*match = dom_string_caseless_lwc_isequal(atr_val, value);
-
-	/* check for prefix match */
-	if (*match == false) {
-		const char *data = (const char *) dom_string_data(atr_val);
-		size_t len = dom_string_byte_length(atr_val);
-
-		const char *start = (char *) data + len - vlen;
-
-		if ((len >= vlen) &&
-		    (strncasecmp(start, lwc_string_data(value), vlen) == 0)) {
-			*match = true;
-		}
-
-
-	}
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match =
+    match_bool(node, qname->name, value, js_node_has_attribute_suffix);
+  return CSS_OK;
 }
 
 /**
@@ -1075,59 +717,9 @@ css_error node_has_attribute_substring(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-	dom_node *n = node;
-	dom_string *name;
-	dom_string *atr_val;
-	dom_exception err;
-
-	size_t vlen = lwc_string_length(value);
-
-	if (vlen == 0) {
-		*match = false;
-		return CSS_OK;
-	}
-
-	err = dom_string_create_interned(
-		(const uint8_t *) lwc_string_data(qname->name),
-		lwc_string_length(qname->name), &name);
-	if (err != DOM_NO_ERR)
-		return CSS_NOMEM;
-
-	err = dom_element_get_attribute(n, name, &atr_val);
-	if ((err != DOM_NO_ERR) || (atr_val == NULL)) {
-		dom_string_unref(name);
-		*match = false;
-		return CSS_OK;
-	}
-
-	dom_string_unref(name);
-
-	/* check for exact match */
-	*match = dom_string_caseless_lwc_isequal(atr_val, value);
-
-	/* check for prefix match */
-	if (*match == false) {
-		const char *vdata = lwc_string_data(value);
-		const char *start = (const char *) dom_string_data(atr_val);
-		size_t len = dom_string_byte_length(atr_val);
-		const char *last_start = start + len - vlen;
-
-		if (len >= vlen) {
-			while (start <= last_start) {
-				if (strncasecmp(start, vdata,
-						vlen) == 0) {
-					*match = true;
-					break;
-				}
-
-				start++;
-			}
-		}
-	}
-
-	dom_string_unref(atr_val);
-
-	return CSS_OK;
+  *match =
+    match_bool(node, qname->name, value, js_node_has_attribute_substring);
+  return CSS_OK;
 }
 
 /**
@@ -1142,33 +734,8 @@ css_error node_has_attribute_substring(void *pw, void *node,
  */
 css_error node_is_root(void *pw, void *node, bool *match)
 {
-	dom_node *n = node;
-	dom_node *parent;
-	dom_node_type type;
-	dom_exception err;
-
-	err = dom_node_get_parent_node(n, &parent);
-	if (err != DOM_NO_ERR) {
-		return CSS_NOMEM;
-	}
-
-	if (parent != NULL) {
-		err = dom_node_get_node_type(parent, &type);
-
-		dom_node_unref(parent);
-
-		if (err != DOM_NO_ERR)
-			return CSS_NOMEM;
-
-		if (type != DOM_DOCUMENT_NODE) {
-			*match = false;
-			return CSS_OK;
-		}
-	}
-
-	*match = true;
-
-	return CSS_OK;
+  *match = match_bool(node, NULL, NULL, js_node_is_root);
+  return CSS_OK;
 }
 
 static int
