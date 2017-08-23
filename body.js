@@ -1,3 +1,11 @@
+/*
+ * body.js
+ * Copyright 2017 Lucas Neves <lcneves@gmail.com>
+ *
+ * Root element for a w3d page.
+ * Part of the w3d project.
+ */
+
 'use strict';
 
 const Object3D = require('./object3d.js');

@@ -8,7 +8,8 @@
 'use strict';
 
 function resolve_url (pw, base, rel, abs) {}
-function node_name (pw, node, qname) {}
+
+function node_name (node) {}
 function node_classes (pw, node, classes, n_classes) {}
 function node_id (pw, node, id) {}
 function named_ancestor_node (pw, node, qname, ancestor) {}
