@@ -738,42 +738,6 @@ css_error node_is_root(void *pw, void *node, bool *match)
   return CSS_OK;
 }
 
-static int
-node_count_siblings_check(dom_node *node,
-			  bool check_name,
-			  dom_string *name)
-{
-	dom_node_type type;
-	int ret = 0;
-	dom_exception exc;
-
-	if (node == NULL)
-		return 0;
-
-	exc = dom_node_get_node_type(node, &type);
-	if ((exc != DOM_NO_ERR) || (type != DOM_ELEMENT_NODE)) {
-		return 0;
-	}
-
-	if (check_name) {
-		dom_string *node_name = NULL;
-		exc = dom_node_get_node_name(node, &node_name);
-
-		if ((exc == DOM_NO_ERR) && (node_name != NULL)) {
-
-			if (dom_string_caseless_isequal(name,
-							node_name)) {
-				ret = 1;
-			}
-			dom_string_unref(node_name);
-		}
-	} else {
-		ret = 1;
-	}
-
-	return ret;
-}
-
 /**
  * Callback to count a node's siblings.
  *
@@ -789,54 +753,10 @@ node_count_siblings_check(dom_node *node,
 css_error node_count_siblings(void *pw, void *n, bool same_name,
 		bool after, int32_t *count)
 {
-	int32_t cnt = 0;
-	dom_exception exc;
-	dom_string *node_name = NULL;
+  lcw_string* node = n;
+  const char* node_string = lwc_string_data(n);
 
-	if (same_name) {
-		dom_node *node = n;
-		exc = dom_node_get_node_name(node, &node_name);
-		if ((exc != DOM_NO_ERR) || (node_name == NULL)) {
-			return CSS_NOMEM;
-		}
-	}
-
-	if (after) {
-		dom_node *node = dom_node_ref(n);
-		dom_node *next;
-
-		do {
-			exc = dom_node_get_next_sibling(node, &next);
-			if ((exc != DOM_NO_ERR))
-				break;
-
-			dom_node_unref(node);
-			node = next;
-
-			cnt += node_count_siblings_check(node, same_name, node_name);
-		} while (node != NULL);
-	} else {
-		dom_node *node = dom_node_ref(n);
-		dom_node *next;
-
-		do {
-			exc = dom_node_get_previous_sibling(node, &next);
-			if ((exc != DOM_NO_ERR))
-				break;
-
-			dom_node_unref(node);
-			node = next;
-
-			cnt += node_count_siblings_check(node, same_name, node_name);
-
-		} while (node != NULL);
-	}
-
-	if (node_name != NULL) {
-		dom_string_unref(node_name);
-	}
-
-	*count = cnt;
+	*count = js_node_count_siblings(node_string, same_name, after);
 	return CSS_OK;
 }
 
@@ -852,45 +772,14 @@ css_error node_count_siblings(void *pw, void *n, bool same_name,
  */
 css_error node_is_empty(void *pw, void *node, bool *match)
 {
-	dom_node *n = node, *next;
-	dom_exception err;
-
-	*match = true;
-
-	err = dom_node_get_first_child(n, &n);
-	if (err != DOM_NO_ERR) {
-		return CSS_BADPARM;
-	}
-
-	while (n != NULL) {
-		dom_node_type ntype;
-		err = dom_node_get_node_type(n, &ntype);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_BADPARM;
-		}
-
-		if (ntype == DOM_ELEMENT_NODE ||
-		    ntype == DOM_TEXT_NODE) {
-			*match = false;
-			dom_node_unref(n);
-			break;
-		}
-
-		err = dom_node_get_next_sibling(n, &next);
-		if (err != DOM_NO_ERR) {
-			dom_node_unref(n);
-			return CSS_BADPARM;
-		}
-		dom_node_unref(n);
-		n = next;
-	}
-
-	return CSS_OK;
+  *match = match_bool(node, NULL, NULL, js_node_is_empty);
+  return CSS_OK;
 }
 
 /**
  * Callback to determine if a node is a linking element.
+ *
+ * NOTE: In NetSurf, element must be <a> and have a href property.
  *
  * \param pw     HTML document
  * \param n      DOM node
@@ -901,29 +790,7 @@ css_error node_is_empty(void *pw, void *node, bool *match)
  */
 css_error node_is_link(void *pw, void *n, bool *match)
 {
-	dom_node *node = n;
-	dom_exception exc;
-	dom_string *node_name = NULL;
-
-	exc = dom_node_get_node_name(node, &node_name);
-	if ((exc != DOM_NO_ERR) || (node_name == NULL)) {
-		return CSS_NOMEM;
-	}
-
-	if (dom_string_caseless_lwc_isequal(node_name, corestring_lwc_a)) {
-		bool has_href;
-		exc = dom_element_has_attribute(node, corestring_dom_href,
-				&has_href);
-		if ((exc == DOM_NO_ERR) && (has_href)) {
-			*match = true;
-		} else {
-			*match = false;
-		}
-	} else {
-		*match = false;
-	}
-	dom_string_unref(node_name);
-
+  *match = match_bool(node, NULL, NULL, js_node_is_link);
 	return CSS_OK;
 }
 
@@ -940,60 +807,7 @@ css_error node_is_link(void *pw, void *n, bool *match)
  */
 css_error node_is_visited(void *pw, void *node, bool *match)
 {
-	nscss_select_ctx *ctx = pw;
-	nsurl *url;
-	nserror error;
-	const struct url_data *data;
-
-	dom_exception exc;
-	dom_node *n = node;
-	dom_string *s = NULL;
-
-	*match = false;
-
-	exc = dom_node_get_node_name(n, &s);
-	if ((exc != DOM_NO_ERR) || (s == NULL)) {
-		return CSS_NOMEM;
-	}
-
-	if (!dom_string_caseless_lwc_isequal(s, corestring_lwc_a)) {
-		/* Can't be visited; not ancher element */
-		dom_string_unref(s);
-		return CSS_OK;
-	}
-
-	/* Finished with node name string */
-	dom_string_unref(s);
-	s = NULL;
-
-	exc = dom_element_get_attribute(n, corestring_dom_href, &s);
-	if ((exc != DOM_NO_ERR) || (s == NULL)) {
-		/* Can't be visited; not got a URL */
-		return CSS_OK;
-	}
-
-	/* Make href absolute */
-	/* TODO: this duplicates what we do for box->href
-	 *       should we put the absolute URL on the dom node? */
-	error = nsurl_join(ctx->base_url, dom_string_data(s), &url);
-
-	/* Finished with href string */
-	dom_string_unref(s);
-
-	if (error != NSERROR_OK) {
-		/* Couldn't make nsurl object */
-		return CSS_NOMEM;
-	}
-
-	data = urldb_get_url_data(url);
-
-	/* Visited if in the db and has
-	 * non-zero visit count */
-	if (data != NULL && data->visits > 0)
-		*match = true;
-
-	nsurl_unref(url);
-
+  *match = match_bool(node, NULL, NULL, js_node_is_visited);
 	return CSS_OK;
 }
 
@@ -1009,10 +823,7 @@ css_error node_is_visited(void *pw, void *node, bool *match)
  */
 css_error node_is_hover(void *pw, void *node, bool *match)
 {
-	/** \todo Support hovering */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_hover);
 	return CSS_OK;
 }
 
@@ -1028,10 +839,7 @@ css_error node_is_hover(void *pw, void *node, bool *match)
  */
 css_error node_is_active(void *pw, void *node, bool *match)
 {
-	/** \todo Support active nodes */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_active);
 	return CSS_OK;
 }
 
@@ -1047,10 +855,7 @@ css_error node_is_active(void *pw, void *node, bool *match)
  */
 css_error node_is_focus(void *pw, void *node, bool *match)
 {
-	/** \todo Support focussed nodes */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_focus);
 	return CSS_OK;
 }
 
@@ -1066,10 +871,7 @@ css_error node_is_focus(void *pw, void *node, bool *match)
  */
 css_error node_is_enabled(void *pw, void *node, bool *match)
 {
-	/** \todo Support enabled nodes */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_enabled);
 	return CSS_OK;
 }
 
@@ -1085,10 +887,7 @@ css_error node_is_enabled(void *pw, void *node, bool *match)
  */
 css_error node_is_disabled(void *pw, void *node, bool *match)
 {
-	/** \todo Support disabled nodes */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_disabled);
 	return CSS_OK;
 }
 
@@ -1104,10 +903,7 @@ css_error node_is_disabled(void *pw, void *node, bool *match)
  */
 css_error node_is_checked(void *pw, void *node, bool *match)
 {
-	/** \todo Support checked nodes */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_checked);
 	return CSS_OK;
 }
 
@@ -1123,10 +919,7 @@ css_error node_is_checked(void *pw, void *node, bool *match)
  */
 css_error node_is_target(void *pw, void *node, bool *match)
 {
-	/** \todo Support target */
-
-	*match = false;
-
+  *match = match_bool(node, NULL, NULL, js_node_is_target);
 	return CSS_OK;
 }
 
@@ -1144,11 +937,19 @@ css_error node_is_target(void *pw, void *node, bool *match)
 css_error node_is_lang(void *pw, void *node,
 		lwc_string *lang, bool *match)
 {
-	/** \todo Support languages */
-
-	*match = false;
-
+	*match = match_bool(node, lang, NULL, js_node_is_lang);
 	return CSS_OK;
+}
+
+/*
+ * NOTE: Somehow apparently NetSurf doesn't bother implementing this.
+ */
+css_error (*node_presentational_hint)(void *pw, void *node,
+			uint32_t *nhints, css_hint **hints)
+{
+  *nhints = 0;
+  *hints = NULL;
+  return CSS_OK;
 }
 
 /**
