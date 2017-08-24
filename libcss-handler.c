@@ -67,6 +67,8 @@ static css_error node_is_checked(void *pw, void *node, bool *match);
 static css_error node_is_target(void *pw, void *node, bool *match);
 static css_error node_is_lang(void *pw, void *node,
 		lwc_string *lang, bool *match);
+static css_error node_presentational_hint(void *pw, void *node,
+			uint32_t *nhints, css_hint **hints);
 static css_error ua_default_for_property(void *pw, uint32_t property,
 		css_hint *hint);
 static css_error set_libcss_node_data(void *pw, void *node,
@@ -119,6 +121,8 @@ static css_select_handler selection_handler = {
 	get_libcss_node_data
 };
 
+const int UA_FONT_SIZE = js_ua_font_size();
+
 /**
  * Font size computation callback for libcss
  *
@@ -128,6 +132,8 @@ static css_select_handler selection_handler = {
  * \return CSS_OK on success
  *
  * \post \a size will be an absolute font size
+ *
+ * Slightly adapted from NetSurf's original implementation.
  */
 css_error compute_font_size(void *pw, const css_hint *parent,
 		css_hint *size)
@@ -152,7 +158,7 @@ css_error compute_font_size(void *pw, const css_hint *parent,
 	/* Grab parent size, defaulting to medium if none */
 	if (parent == NULL) {
 		parent_size.value = FDIV(FMUL(factors[CSS_FONT_SIZE_MEDIUM - 1],
-				INTTOFIX(nsoption_int(font_size))),
+				INTTOFIX(UA_FONT_SIZE)),
 				INTTOFIX(10));
 		parent_size.unit = CSS_UNIT_PT;
 	} else {
@@ -169,7 +175,7 @@ css_error compute_font_size(void *pw, const css_hint *parent,
 	if (size->status < CSS_FONT_SIZE_LARGER) {
 		/* Keyword -- simple */
 		size->data.length.value = FDIV(FMUL(factors[size->status - 1],
-				INTTOFIX(nsoption_int(font_size))), F_10);
+				INTTOFIX(UA_FONT_SIZE)), F_10);
 		size->data.length.unit = CSS_UNIT_PT;
 	} else if (size->status == CSS_FONT_SIZE_LARGER) {
 		/** \todo Step within table, if appropriate */
@@ -209,12 +215,13 @@ lwc_intern_string("", 0, &NULL_STR);
 /*
  * Generic get function to be used by callbacks. Must return string.
  */
-lwc_string* get_string (
+css_error get_string (
     void *node,
-    const char* (*js_fun)(const char*)
+    const char* (*js_fun)(const char*),
+    lwc_string** ret
 )
 {
-  lwc_string* n = node;
+  lwc_string* n = (lwc_string*) node;
   const char* node_string = lwc_string_data(n);
 
   const char* js_results =
@@ -222,26 +229,30 @@ lwc_string* get_string (
 
   if (*js_results == "\0")
   {
-    return NULL;
+    *ret = NULL;
+  }
+  else
+  {
+    lwc_string *results;
+    lwc_intern_string(js_results, strlen(js_results), &results);
+    *ret = lwc_string_ref(results);
   }
 
-  lwc_string *results;
-  lwc_intern_string(js_results, strlen(js_results), &results);
-
-  return results;
+  return CSS_OK;
 }
 
 /*
  * Generic search function to be used by callbacks. Must return boolean.
  */
-bool match_bool (
+css_error match_bool (
     void *node,
-    void *search_parameter,
-    void *match_parameter,
-    const char* (*js_fun)(const char*, const char*, const char*)
+    lwc_string* search_parameter,
+    lwc_string* match_parameter,
+    const char* (*js_fun)(const char*, const char*, const char*),
+    bool* ret
 )
 {
-  lwc_string* n = node;
+  lwc_string* n = (lwc_string*) node;
   const char* node_string = lwc_string_data(n);
 
   lwc_string* s = search_parameter;
@@ -254,16 +265,18 @@ bool match_bool (
     ? lwc_string_data(NULL_STR)
     : lwc_string_data(m);
 
-  return (*js_fun)(node_string, search_string,  match_string);
+  *ret = (*js_fun)(node_string, search_string,  match_string);
+  return CSS_OK;
 }
 
 /*
  * Generic search function to be used by callbacks. Must return string.
  */
-lwc_string* match_string (
+css_error match_string (
     void *node,
-    void *search_parameter,
-    const char* (*js_fun)(const char*, const char*)
+    lwc_string* search_parameter,
+    const char* (*js_fun)(const char*, const char*),
+    lwc_string** ret
 )
 {
   lwc_string* n = node;
@@ -276,14 +289,28 @@ lwc_string* match_string (
 
   if (*js_results == "\0")
   {
-    return NULL;
+    *ret = NULL;
+  }
+  else
+  {
+    lwc_string *results;
+    lwc_intern_string(js_results, strlen(js_results), &results);
+    *ret = lwc_string_ref(results);
   }
 
-  lwc_string *results;
-  lwc_intern_string(js_results, strlen(js_results), &results);
-
-  return results;
+  return CSS_OK;
 }
+
+/*
+ * Not sure this is needed for node_name
+void set_namespace (css_qname* qname, const char* ns)
+{
+  lwc_string *namespace_ptr;
+  lwc_intern_string(ns, strlen(ns), &namespace_ptr);
+  qname->ns = namespace_ptr;
+}
+ */
+
 
 /******************************************************************************
  * Style selection callbacks                                                  *
@@ -300,13 +327,9 @@ lwc_string* match_string (
  */
 css_error node_name(void *pw, void *node, css_qname *qname)
 {
-  const char* namespace = "nodes";
-  lwc_string *namespace_ptr;
-  lwc_intern_string(namespace, strlen(namespace), &namespace_ptr);
-  qname->ns = namespace_ptr;
+  /*  set_namespace(qname, "names"); *Is this needed? */
 
-  qname->name = get_string(node, js_node_name);
-  return CSS_OK;
+  return get_string(node, js_node_name, &(qname->name));
 }
 
 /**
@@ -326,12 +349,11 @@ css_error node_name(void *pw, void *node, css_qname *qname)
 css_error node_classes(void *pw, void *node,
 		lwc_string ***classes, uint32_t *n_classes)
 {
-  lwc_string* n = node;
+  lwc_string* n = (lwc_string*) node;
   const char* node_string = lwc_string_data(n);
 
   /* This js function returns a stringified array of class strings */
   const char* js_results = js_node_classes(node_string);
-  size_t js_results_s = strlen(js_results);
 
   /* Bail out */
   if (*js_results == NULL)
@@ -345,42 +367,46 @@ css_error node_classes(void *pw, void *node,
   uint32_t n = 1;
   while(*current_c != NULL)
   {
-    if (*(++current_c) == "&")
-    {
+    if (*(++current_c) == ",")
       ++n;
-    }
   }
 
-  lwc_string** ptr_array = malloc(sizeof(lwc_string*));
+  lwc_string** ptr_array = malloc(sizeof(lwc_string*) * n);
 
-  const char current_class[js_results_s + 1];
+  size_t current_class_s = strlen(js_results) + 1;
+  const char current_class[current_class_s];
   int offset = 0;
+  int classes_processed = 0;
   current_c = js_results;
-  while (*current_c != NULL)
+  while (*(current_c + offset) != NULL)
   {
-    switch (*current_c)
+    switch (*(current_c + offset))
     {
       case "\"":
       case "[":
-      case "]":
         ++current_c;
         break;
 
       case ",":
-        current_class[++current_c] = "\0";
+      case "]":
+        current_c += ++offset;
+        current_class[offset] = "\0";
+        offset = 0;
         lwc_string* class_name;
         lwc_intern_string(current_class, strlen(current_class), &class_name);
-        ptr_array[offset++] = class_name;
+        ptr_array[classes_processed++ * sizeof(lwc_string*)] =
+          lwc_string_ref(class_name);
         break;
 
       default:
-        current_class[current_c] = *(current_c++);
+        current_class[offset] = *(current_c + offset++);
+        break;'
     }
   }
 
-	*classes = ptr_array;
-	*n_classes = n;
-	return CSS_OK;
+  *classes = ptr_array;
+  *n_classes = n;
+  return CSS_OK;
 }
 
 /**
@@ -394,8 +420,7 @@ css_error node_classes(void *pw, void *node,
  */
 css_error node_id(void *pw, void *node, lwc_string **id)
 {
-  *id = get_string(node, js_node_id);
-  return CSS_OK;
+  return get_string(node, js_node_id, id);
 }
 
 /**
@@ -412,8 +437,7 @@ css_error node_id(void *pw, void *node, lwc_string **id)
 css_error named_ancestor_node(void *pw, void *node,
 		const css_qname *qname, void **ancestor)
 {
-  *ancestor = match_string(node, qname->name, js_named_ancestor_node);
-  return CSS_OK;
+  return match_string(node, qname->name, js_named_ancestor_node, ancestor);
 }
 
 /**
@@ -430,8 +454,7 @@ css_error named_ancestor_node(void *pw, void *node,
 css_error named_parent_node(void *pw, void *node,
 		const css_qname *qname, void **parent)
 {
-  *parent = match_string(node, qname->name, js_named_parent_node);
-  return CSS_OK;
+  return match_string(node, qname->name, js_named_parent_node, ancestor);
 }
 
 /**
@@ -451,8 +474,7 @@ css_error named_parent_node(void *pw, void *node,
 css_error named_sibling_node(void *pw, void *node,
 		const css_qname *qname, void **sibling)
 {
-  *sibling = match_string(node, qname->name, js_named_sibling_node);
-  return CSS_OK;
+  return match_string(node, qname->name, js_named_sibling_node, sibling);
 }
 
 /**
@@ -472,8 +494,8 @@ css_error named_sibling_node(void *pw, void *node,
 css_error named_generic_sibling_node(void *pw, void *node,
 		const css_qname *qname, void **sibling)
 {
-  *sibling = match_string(node, qname->name, js_named_generic_sibling_node);
-  return CSS_OK;
+  return
+    match_string(node, qname->name, js_named_generic_sibling_node, sibling);
 }
 
 /**
@@ -488,8 +510,7 @@ css_error named_generic_sibling_node(void *pw, void *node,
  */
 css_error parent_node(void *pw, void *node, void **parent)
 {
-  *parent = get_string(node, js_parent_node);
-  return CSS_OK;
+  return get_string(node, js_parent_node, parent);
 }
 
 /**
@@ -504,8 +525,7 @@ css_error parent_node(void *pw, void *node, void **parent)
  */
 css_error sibling_node(void *pw, void *node, void **sibling)
 {
-  *sibling = get_string(node, js_sibling_node);
-  return CSS_OK;
+  return get_string(node, js_sibling_node, sibling);
 }
 
 /**
@@ -524,8 +544,7 @@ css_error sibling_node(void *pw, void *node, void **sibling)
 css_error node_has_name(void *pw, void *node,
 		const css_qname *qname, bool *match)
 {
-  *match = match_bool(node, qname->name, NULL, js_node_has_name);
-  return CSS_OK;
+  return match_bool(node, qname->name, NULL, js_node_has_name, match);
 }
 
 /**
@@ -542,8 +561,7 @@ css_error node_has_name(void *pw, void *node,
 css_error node_has_class(void *pw, void *node,
 		lwc_string *name, bool *match)
 {
-  *match = match_bool(node, name, NULL, js_node_has_class);
-  return CSS_OK;
+  return match_bool(node, name, NULL, js_node_has_class, match);
 }
 
 /**
@@ -560,8 +578,7 @@ css_error node_has_class(void *pw, void *node,
 css_error node_has_id(void *pw, void *node,
 		lwc_string *name, bool *match)
 {
-  *match = match_bool(node, name, NULL, js_node_has_id);
-  return CSS_OK;
+  return match_bool(node, name, NULL, js_node_has_id, match);
 }
 
 /**
@@ -579,8 +596,7 @@ css_error node_has_id(void *pw, void *node,
 css_error node_has_attribute(void *pw, void *node,
 		const css_qname *qname, bool *match)
 {
-  *match = match_bool(node, qname->name, NULL, js_node_has_attribute);
-  return CSS_OK;
+  return match_bool(node, qname->name, NULL, js_node_has_attribute, match);
 }
 
 /**
@@ -600,8 +616,8 @@ css_error node_has_attribute_equal(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match = match_bool(node, qname->name, value, js_node_has_attribute_equal);
-  return CSS_OK;
+  return
+    match_bool(node, qname->name, value, js_node_has_attribute_equal, match);
 }
 
 /**
@@ -625,9 +641,9 @@ css_error node_has_attribute_dashmatch(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match =
-    match_bool(node, qname->name, value, js_node_has_attribute_dashmatch);
-  return CSS_OK;
+  return match_bool(
+      node, qname->name, value, js_node_has_attribute_dashmatch, match
+  );
 }
 
 /**
@@ -648,9 +664,9 @@ css_error node_has_attribute_includes(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match =
-    match_bool(node, qname->name, value, js_node_has_attribute_includes);
-  return CSS_OK;
+  return match_bool(
+      node, qname->name, value, js_node_has_attribute_includes, match
+  );
 }
 
 /**
@@ -671,9 +687,9 @@ css_error node_has_attribute_prefix(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match =
-    match_bool(node, qname->name, value, js_node_has_attribute_prefix);
-  return CSS_OK;
+  return match_bool(
+      node, qname->name, value, js_node_has_attribute_prefix, match
+  );
 }
 
 /**
@@ -694,9 +710,9 @@ css_error node_has_attribute_suffix(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match =
-    match_bool(node, qname->name, value, js_node_has_attribute_suffix);
-  return CSS_OK;
+  return match_bool(
+      node, qname->name, value, js_node_has_attribute_suffix, match
+  );
 }
 
 /**
@@ -717,9 +733,9 @@ css_error node_has_attribute_substring(void *pw, void *node,
 		const css_qname *qname, lwc_string *value,
 		bool *match)
 {
-  *match =
-    match_bool(node, qname->name, value, js_node_has_attribute_substring);
-  return CSS_OK;
+  return match_bool(
+      node, qname->name, value, js_node_has_attribute_substring, match
+  );
 }
 
 /**
@@ -734,8 +750,7 @@ css_error node_has_attribute_substring(void *pw, void *node,
  */
 css_error node_is_root(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_root);
-  return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_root, match);
 }
 
 /**
@@ -756,8 +771,8 @@ css_error node_count_siblings(void *pw, void *n, bool same_name,
   lcw_string* node = n;
   const char* node_string = lwc_string_data(n);
 
-	*count = js_node_count_siblings(node_string, same_name, after);
-	return CSS_OK;
+  *count = (int32_t) js_node_count_siblings(node_string, same_name, after);
+  return CSS_OK;
 }
 
 /**
@@ -772,8 +787,7 @@ css_error node_count_siblings(void *pw, void *n, bool same_name,
  */
 css_error node_is_empty(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_empty);
-  return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_empty, match);
 }
 
 /**
@@ -790,8 +804,7 @@ css_error node_is_empty(void *pw, void *node, bool *match)
  */
 css_error node_is_link(void *pw, void *n, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_link);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_link, match);
 }
 
 /**
@@ -807,8 +820,7 @@ css_error node_is_link(void *pw, void *n, bool *match)
  */
 css_error node_is_visited(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_visited);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_visited, match);
 }
 
 /**
@@ -823,8 +835,7 @@ css_error node_is_visited(void *pw, void *node, bool *match)
  */
 css_error node_is_hover(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_hover);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_hover, match);
 }
 
 /**
@@ -839,8 +850,7 @@ css_error node_is_hover(void *pw, void *node, bool *match)
  */
 css_error node_is_active(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_active);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_active, match);
 }
 
 /**
@@ -855,8 +865,7 @@ css_error node_is_active(void *pw, void *node, bool *match)
  */
 css_error node_is_focus(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_focus);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_focus, match);
 }
 
 /**
@@ -871,8 +880,7 @@ css_error node_is_focus(void *pw, void *node, bool *match)
  */
 css_error node_is_enabled(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_enabled);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_enabled, match);
 }
 
 /**
@@ -887,8 +895,7 @@ css_error node_is_enabled(void *pw, void *node, bool *match)
  */
 css_error node_is_disabled(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_disabled);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_disabled, match);
 }
 
 /**
@@ -903,8 +910,7 @@ css_error node_is_disabled(void *pw, void *node, bool *match)
  */
 css_error node_is_checked(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_checked);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_checked, match);
 }
 
 /**
@@ -919,8 +925,7 @@ css_error node_is_checked(void *pw, void *node, bool *match)
  */
 css_error node_is_target(void *pw, void *node, bool *match)
 {
-  *match = match_bool(node, NULL, NULL, js_node_is_target);
-	return CSS_OK;
+  return match_bool(node, NULL, NULL, js_node_is_target, match);
 }
 
 /**
@@ -937,20 +942,19 @@ css_error node_is_target(void *pw, void *node, bool *match)
 css_error node_is_lang(void *pw, void *node,
 		lwc_string *lang, bool *match)
 {
-	*match = match_bool(node, lang, NULL, js_node_is_lang);
-	return CSS_OK;
+  return match_bool(node, lang, NULL, js_node_is_lang, match);
 }
 
 /*
  * NOTE: Somehow apparently NetSurf doesn't bother implementing this.
  */
-css_error (*node_presentational_hint)(void *pw, void *node,
+css_error node_presentational_hint(void *pw, void *node,
 			uint32_t *nhints, css_hint **hints)
 {
   /*
    * TODO: Maybe implement presentational hints,
    * when we find out what it means?
-   * */
+   */
   *nhints = 0;
   *hints = NULL;
   return CSS_OK;
@@ -991,38 +995,82 @@ css_error ua_default_for_property(void *pw, uint32_t property, css_hint *hint)
 	return CSS_OK;
 }
 
+/*
+ * Linked list of pointers to libcss_node_data.
+ * The ID is the handler for the node.
+ */
+struct node_data {
+	lwc_string* id;
+	void *data;
+	struct node_data* next;
+};
+typedef struct node_data node_data;
+
+node_data first_node;
+first_node->id = NULL;
+first_node->data = NULL;
+first_node->next = NULL;
+
+node_data* get_last_node_data ()
+{
+  node_data* current_node = &first_node;
+
+  while (current_node->next != NULL)
+    current_node = current_node->next;
+
+  return current_node;
+}
+
+node_data* get_node_data_by_id (lwc_string* id)
+{
+  node_data* current_node = &first_node;
+
+  while (current_node->next != NULL)
+  {
+    current_node = current_node->next;
+
+    bool match;
+    lwc_string_isequal(*id, current_node->id, &bool);
+
+    if (match)
+      return current_node;
+  }
+
+  return NULL;
+}
+
+void append_node_data (lwc_string* id, void* new_data)
+{
+  node_data* new_node = malloc(sizeof(node_data));
+  new_node->id = id;
+  new_node-> data = new_data;
+  new_node-> next = NULL;
+
+  node_data* last_node = get_last_node_data();
+  last_node->next = new_node;
+}
+
+void update_node_data (lwc_string* id, void* new_data)
+{
+  node_data* node = get_node_data_by_id(id);
+
+  if (node == NULL)
+    append_node_data(new_data);
+  else
+    node->data = new_data;
+}
+
+
 css_error set_libcss_node_data(void *pw, void *node, void *libcss_node_data)
 {
-	dom_node *n = node;
-	dom_exception err;
-	void *old_node_data;
-
-	/* Set this node's node data */
-	err = dom_node_set_user_data(n,
-			corestring_dom___ns_key_libcss_node_data,
-			libcss_node_data, nscss_dom_user_data_handler,
-			(void *) &old_node_data);
-	if (err != DOM_NO_ERR) {
-		return CSS_NOMEM;
-	}
-
-	assert(old_node_data == NULL);
-
-	return CSS_OK;
+  update_node_data((lwc_string*) node, libcss_node_data);
+  return CSS_OK;
 }
 
 css_error get_libcss_node_data(void *pw, void *node, void **libcss_node_data)
 {
-	dom_node *n = node;
-	dom_exception err;
-
-	/* Get this node's node data */
-	err = dom_node_get_user_data(n,
-			corestring_dom___ns_key_libcss_node_data,
-			libcss_node_data);
-	if (err != DOM_NO_ERR) {
-		return CSS_NOMEM;
-	}
-
-	return CSS_OK;
+  node_data* nd = get_node_data_by_id((lwc_string*) node);
+  *libcss_node_data = nd->data;
+  return CSS_OK;
 }
+
