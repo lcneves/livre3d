@@ -947,6 +947,10 @@ css_error node_is_lang(void *pw, void *node,
 css_error (*node_presentational_hint)(void *pw, void *node,
 			uint32_t *nhints, css_hint **hints)
 {
+  /*
+   * TODO: Maybe implement presentational hints,
+   * when we find out what it means?
+   * */
   *nhints = 0;
   *hints = NULL;
   return CSS_OK;
@@ -966,25 +970,12 @@ css_error ua_default_for_property(void *pw, uint32_t property, css_hint *hint)
 	if (property == CSS_PROP_COLOR) {
 		hint->data.color = 0xff000000;
 		hint->status = CSS_COLOR_COLOR;
+
 	} else if (property == CSS_PROP_FONT_FAMILY) {
+                /* TODO: Implement default font option */
 		hint->data.strings = NULL;
-		switch (nsoption_int(font_default)) {
-		case PLOT_FONT_FAMILY_SANS_SERIF:
-			hint->status = CSS_FONT_FAMILY_SANS_SERIF;
-			break;
-		case PLOT_FONT_FAMILY_SERIF:
-			hint->status = CSS_FONT_FAMILY_SERIF;
-			break;
-		case PLOT_FONT_FAMILY_MONOSPACE:
-			hint->status = CSS_FONT_FAMILY_MONOSPACE;
-			break;
-		case PLOT_FONT_FAMILY_CURSIVE:
-			hint->status = CSS_FONT_FAMILY_CURSIVE;
-			break;
-		case PLOT_FONT_FAMILY_FANTASY:
-			hint->status = CSS_FONT_FAMILY_FANTASY;
-			break;
-		}
+                hint->status = CSS_FONT_FAMILY_SANS_SERIF;
+		
 	} else if (property == CSS_PROP_QUOTES) {
 		/** \todo Not exactly useful :) */
 		hint->data.strings = NULL;
