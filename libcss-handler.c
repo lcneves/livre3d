@@ -275,7 +275,234 @@ uint64_t make_results_for_js (
 
 uint64_t get_property (css_stylesheet* sheet, const char* prop)
 {
-
+case CSS_PROP_AZIMUTH:
+break;
+case CSS_PROP_BACKGROUND_ATTACHMENT:
+break;
+case CSS_PROP_BACKGROUND_COLOR:
+break;
+case CSS_PROP_BACKGROUND_IMAGE:
+break;
+case CSS_PROP_BACKGROUND_POSITION:
+break;
+case CSS_PROP_BACKGROUND_REPEAT:
+break;
+case CSS_PROP_BORDER_COLLAPSE:
+break;
+case CSS_PROP_BORDER_SPACING:
+break;
+case CSS_PROP_BORDER_TOP_COLOR:
+break;
+case CSS_PROP_BORDER_RIGHT_COLOR:
+break;
+case CSS_PROP_BORDER_BOTTOM_COLOR:
+break;
+case CSS_PROP_BORDER_LEFT_COLOR:
+break;
+case CSS_PROP_BORDER_TOP_STYLE:
+break;
+case CSS_PROP_BORDER_RIGHT_STYLE:
+break;
+case CSS_PROP_BORDER_BOTTOM_STYLE:
+break;
+case CSS_PROP_BORDER_LEFT_STYLE:
+break;
+case CSS_PROP_BORDER_TOP_WIDTH:
+break;
+case CSS_PROP_BORDER_RIGHT_WIDTH:
+break;
+case CSS_PROP_BORDER_BOTTOM_WIDTH:
+break;
+case CSS_PROP_BORDER_LEFT_WIDTH:
+break;
+case CSS_PROP_BOTTOM:
+break;
+case CSS_PROP_CAPTION_SIDE:
+break;
+case CSS_PROP_CLEAR:
+break;
+case CSS_PROP_CLIP:
+break;
+case CSS_PROP_COLOR:
+break;
+case CSS_PROP_CONTENT:
+break;
+case CSS_PROP_COUNTER_INCREMENT:
+break;
+case CSS_PROP_COUNTER_RESET:
+break;
+case CSS_PROP_CUE_AFTER:
+break;
+case CSS_PROP_CUE_BEFORE:
+break;
+case CSS_PROP_CURSOR:
+break;
+case CSS_PROP_DIRECTION:
+break;
+case CSS_PROP_DISPLAY:
+break;
+case CSS_PROP_ELEVATION:
+break;
+case CSS_PROP_EMPTY_CELLS:
+break;
+case CSS_PROP_FLOAT:
+break;
+case CSS_PROP_FONT_FAMILY:
+break;
+case CSS_PROP_FONT_SIZE:
+break;
+case CSS_PROP_FONT_STYLE:
+break;
+case CSS_PROP_FONT_VARIANT:
+break;
+case CSS_PROP_FONT_WEIGHT:
+break;
+case CSS_PROP_HEIGHT:
+break;
+case CSS_PROP_LEFT:
+break;
+case CSS_PROP_LETTER_SPACING:
+break;
+case CSS_PROP_LINE_HEIGHT:
+break;
+case CSS_PROP_LIST_STYLE_IMAGE:
+break;
+case CSS_PROP_LIST_STYLE_POSITION:
+break;
+case CSS_PROP_LIST_STYLE_TYPE:
+break;
+case CSS_PROP_MARGIN_TOP:
+break;
+case CSS_PROP_MARGIN_RIGHT:
+break;
+case CSS_PROP_MARGIN_BOTTOM:
+break;
+case CSS_PROP_MARGIN_LEFT:
+break;
+case CSS_PROP_MAX_HEIGHT:
+break;
+case CSS_PROP_MAX_WIDTH:
+break;
+case CSS_PROP_MIN_HEIGHT:
+break;
+case CSS_PROP_MIN_WIDTH:
+break;
+case CSS_PROP_ORPHANS:
+break;
+case CSS_PROP_OUTLINE_COLOR:
+break;
+case CSS_PROP_OUTLINE_STYLE:
+break;
+case CSS_PROP_OUTLINE_WIDTH:
+break;
+case CSS_PROP_OVERFLOW_X:
+break;
+case CSS_PROP_PADDING_TOP:
+break;
+case CSS_PROP_PADDING_RIGHT:
+break;
+case CSS_PROP_PADDING_BOTTOM:
+break;
+case CSS_PROP_PADDING_LEFT:
+break;
+case CSS_PROP_PAGE_BREAK_AFTER:
+break;
+case CSS_PROP_PAGE_BREAK_BEFORE:
+break;
+case CSS_PROP_PAGE_BREAK_INSIDE:
+break;
+case CSS_PROP_PAUSE_AFTER:
+break;
+case CSS_PROP_PAUSE_BEFORE:
+break;
+case CSS_PROP_PITCH_RANGE:
+break;
+case CSS_PROP_PITCH:
+break;
+case CSS_PROP_PLAY_DURING:
+break;
+case CSS_PROP_POSITION:
+break;
+case CSS_PROP_QUOTES:
+break;
+case CSS_PROP_RICHNESS:
+break;
+case CSS_PROP_RIGHT:
+break;
+case CSS_PROP_SPEAK_HEADER:
+break;
+case CSS_PROP_SPEAK_NUMERAL:
+break;
+case CSS_PROP_SPEAK_PUNCTUATION:
+break;
+case CSS_PROP_SPEAK:
+break;
+case CSS_PROP_SPEECH_RATE:
+break;
+case CSS_PROP_STRESS:
+break;
+case CSS_PROP_TABLE_LAYOUT:
+break;
+case CSS_PROP_TEXT_ALIGN:
+break;
+case CSS_PROP_TEXT_DECORATION:
+break;
+case CSS_PROP_TEXT_INDENT:
+break;
+case CSS_PROP_TEXT_TRANSFORM:
+break;
+case CSS_PROP_TOP:
+break;
+case CSS_PROP_UNICODE_BIDI:
+break;
+case CSS_PROP_VERTICAL_ALIGN:
+break;
+case CSS_PROP_VISIBILITY:
+break;
+case CSS_PROP_VOICE_FAMILY:
+break;
+case CSS_PROP_VOLUME:
+break;
+case CSS_PROP_WHITE_SPACE:
+break;
+case CSS_PROP_WIDOWS:
+break;
+case CSS_PROP_WIDTH:
+break;
+case CSS_PROP_WORD_SPACING:
+break;
+case CSS_PROP_Z_INDEX:
+break;
+case CSS_PROP_OPACITY:
+break;
+case CSS_PROP_BREAK_AFTER:
+break;
+case CSS_PROP_BREAK_BEFORE:
+break;
+case CSS_PROP_BREAK_INSIDE:
+break;
+case CSS_PROP_COLUMN_COUNT:
+break;
+case CSS_PROP_COLUMN_FILL:
+break;
+case CSS_PROP_COLUMN_GAP:
+break;
+case CSS_PROP_COLUMN_RULE_COLOR:
+break;
+case CSS_PROP_COLUMN_RULE_STYLE:
+break;
+case CSS_PROP_COLUMN_RULE_WIDTH:
+break;
+case CSS_PROP_COLUMN_SPAN:
+break;
+case CSS_PROP_COLUMN_WIDTH:
+break;
+case CSS_PROP_WRITING_MODE:
+break;
+case CSS_PROP_OVERFLOW_Y:
+break;
+case CSS_PROP_BOX_SIZING:
+break;
 }
 
 const int UA_FONT_SIZE = js_ua_font_size();
