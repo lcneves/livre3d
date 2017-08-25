@@ -259,6 +259,25 @@ css_select_results* buildStyle(
   return results;
 }
 
+uint64_t make_results_for_js (
+    uint8_t type,
+    uint8_t var1,
+    uint8_t var2,
+    uint8_t var3
+)
+{
+  uint64_t results = (uint64_t) type;
+  results += ((uint64_t) var1) * 0x100;
+  results += ((uint64_t) var2) * 0x10000;
+  results += ((uint64_t) var3) * 0x1000000;
+  return results;
+}
+
+uint64_t get_property (css_stylesheet* sheet, const char* prop)
+{
+
+}
+
 const int UA_FONT_SIZE = js_ua_font_size();
 
 /**
