@@ -15,6 +15,11 @@
 
 #include <libcss/libcss.h>
 
+css_error css_resolve_url(void *pw, const char *base,
+  lwc_string *rel, lwc_string **abs);
+void add_stylesheet (const char* css_string, const char* level,
+    const char* charset, const char* url);
+
 static css_error node_name(void *pw, void *node, css_qname *qname);
 static css_error node_classes(void *pw, void *node,
 		lwc_string ***classes, uint32_t *n_classes);
@@ -118,8 +123,141 @@ static css_select_handler selection_handler = {
 	ua_default_for_property,
 	compute_font_size,
 	set_libcss_node_data,
-	get_libcss_node_data
+	get_libcss_node_data,
 };
+
+css_select_ctx* select_ctx;
+css_select_ctx_create(&select_ctx);
+
+css_error resolve_url(
+  void *pw, const char *base, lwc_string *rel, lwc_string **abs
+)
+{
+  const char* base_str = base;
+  const size_t base_s = strlen(base);
+  const char* rel_str = lwc_string_data(rel_str);
+  const size_t rel_s = strlen(rel_str);
+
+  if (base_str[base_s] == "/")
+    base_str[base_s] = "\0";
+
+  char abs_str[base_s + rel_s + 2];
+  strcpy(abs_str, base_str);
+  strcat(abs_str, "/");
+  strcat(abs_str, rel_str);
+
+  lwc_intern_string(abs_str, strlen(abs_str), abs);
+  return CSS_OK;
+}
+
+void add_stylesheet (
+  const char* css_string,
+  const char* level,
+  const char* charset,
+  const char* url
+)
+{
+  css_language_level css_level;
+  if (strcmp(level, "1") == 0)
+    css_level = CSS_LEVEL_1;
+  else if (strcmp(level, "2") == 0)
+    css_level = CSS_LEVEL_2;
+  else if (strcmp(level, "2.1") == 0)
+    css_level = CSS_LEVEL_21;
+  else
+    css_level = CSS_LEVEL_3; /* Default */
+
+  css_stylesheet_params params;
+  params.params_version = CSS_STYLESHEET_PARAMS_VERSION_1;
+  params.level = css_level;
+  params.charset = charset;
+  params.url = url;
+  params.title = NULL;
+  params.allow_quirks = false;
+  params.inline_style = false;
+  params.resolve = resolve_url;
+  params.resolve_pw = NULL;
+  params.import = NULL;
+  params.import_pw = NULL;
+  params.color = NULL;
+  params.color_pw = NULL;
+  params.font = NULL;
+  params.font_pw = NULL;
+
+  css_stylesheet *sheet;
+  css_stylesheet_create(&params, &sheet);
+
+  css_stylesheet_append_data(
+    sheet,
+    (const uint8_t *) data,
+    sizeof data
+  );
+  css_stylesheet_data_done(sheet);
+
+  css_select_ctx_append_sheet(
+    select_ctx,
+    sheet,
+    CSS_ORIGIN_AUTHOR,
+    CSS_MEDIA_ALL
+  );
+}
+
+/*
+ * Warning: if inline_style is set, the resulting stylesheet will not
+ * be destroyed! This implementation leaks memory.
+ */
+css_select_results* buildStyle(
+  lwc_string* node,
+  const char* inline_style
+)
+{
+  const css_stylesheet* in_style;
+  if (inline_style == NULL || *inline_style == "\0")
+    in_style = NULL;
+  else
+  {
+    css_stylesheet_params params;
+    params.params_version = CSS_STYLESHEET_PARAMS_VERSION_1;
+    params.level = css_level;
+    params.charset = "UTF-8";
+    params.url = NULL;
+    params.title = NULL;
+    params.allow_quirks = false;
+    params.inline_style = true;
+    params.resolve = NULL;
+    params.resolve_pw = NULL;
+    params.import = NULL;
+    params.import_pw = NULL;
+    params.color = NULL;
+    params.color_pw = NULL;
+    params.font = NULL;
+    params.font_pw = NULL;
+
+    css_stylesheet* sheet;
+    css_stylesheet_create(&params, &sheet);
+
+    css_stylesheet_append_data(
+      sheet,
+      (const uint8_t *) inline_style,
+      sizeof inline_style
+    );
+    css_stylesheet_data_done(sheet);
+    in_style = sheet;
+  }
+
+  css_select_results* results;
+  css_select_style(
+    select_ctx,
+    node,
+    CSS_MEDIA_SCREEN,
+    in_style,
+		selection_handler,
+    NULL,
+		&results
+  );
+
+  return results;
+}
 
 const int UA_FONT_SIZE = js_ua_font_size();
 
@@ -979,7 +1117,7 @@ css_error ua_default_for_property(void *pw, uint32_t property, css_hint *hint)
                 /* TODO: Implement default font option */
 		hint->data.strings = NULL;
                 hint->status = CSS_FONT_FAMILY_SANS_SERIF;
-		
+
 	} else if (property == CSS_PROP_QUOTES) {
 		/** \todo Not exactly useful :) */
 		hint->data.strings = NULL;
@@ -1073,4 +1211,3 @@ css_error get_libcss_node_data(void *pw, void *node, void **libcss_node_data)
   *libcss_node_data = nd->data;
   return CSS_OK;
 }
-
