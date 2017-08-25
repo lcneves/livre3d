@@ -273,236 +273,306 @@ uint64_t make_results_for_js (
   return results;
 }
 
-uint64_t get_property (css_stylesheet* sheet, const char* prop)
+uint64_t get_style (const css_computed_style* s, uint8_t prop)
 {
-case CSS_PROP_AZIMUTH:
-break;
-case CSS_PROP_BACKGROUND_ATTACHMENT:
-break;
-case CSS_PROP_BACKGROUND_COLOR:
-break;
-case CSS_PROP_BACKGROUND_IMAGE:
-break;
-case CSS_PROP_BACKGROUND_POSITION:
-break;
-case CSS_PROP_BACKGROUND_REPEAT:
-break;
-case CSS_PROP_BORDER_COLLAPSE:
-break;
-case CSS_PROP_BORDER_SPACING:
-break;
-case CSS_PROP_BORDER_TOP_COLOR:
-break;
-case CSS_PROP_BORDER_RIGHT_COLOR:
-break;
-case CSS_PROP_BORDER_BOTTOM_COLOR:
-break;
-case CSS_PROP_BORDER_LEFT_COLOR:
-break;
-case CSS_PROP_BORDER_TOP_STYLE:
-break;
-case CSS_PROP_BORDER_RIGHT_STYLE:
-break;
-case CSS_PROP_BORDER_BOTTOM_STYLE:
-break;
-case CSS_PROP_BORDER_LEFT_STYLE:
-break;
-case CSS_PROP_BORDER_TOP_WIDTH:
-break;
-case CSS_PROP_BORDER_RIGHT_WIDTH:
-break;
-case CSS_PROP_BORDER_BOTTOM_WIDTH:
-break;
-case CSS_PROP_BORDER_LEFT_WIDTH:
-break;
-case CSS_PROP_BOTTOM:
-break;
-case CSS_PROP_CAPTION_SIDE:
-break;
-case CSS_PROP_CLEAR:
-break;
-case CSS_PROP_CLIP:
-break;
-case CSS_PROP_COLOR:
-break;
-case CSS_PROP_CONTENT:
-break;
-case CSS_PROP_COUNTER_INCREMENT:
-break;
-case CSS_PROP_COUNTER_RESET:
-break;
-case CSS_PROP_CUE_AFTER:
-break;
-case CSS_PROP_CUE_BEFORE:
-break;
-case CSS_PROP_CURSOR:
-break;
-case CSS_PROP_DIRECTION:
-break;
-case CSS_PROP_DISPLAY:
-break;
-case CSS_PROP_ELEVATION:
-break;
-case CSS_PROP_EMPTY_CELLS:
-break;
-case CSS_PROP_FLOAT:
-break;
-case CSS_PROP_FONT_FAMILY:
-break;
-case CSS_PROP_FONT_SIZE:
-break;
-case CSS_PROP_FONT_STYLE:
-break;
-case CSS_PROP_FONT_VARIANT:
-break;
-case CSS_PROP_FONT_WEIGHT:
-break;
-case CSS_PROP_HEIGHT:
-break;
-case CSS_PROP_LEFT:
-break;
-case CSS_PROP_LETTER_SPACING:
-break;
-case CSS_PROP_LINE_HEIGHT:
-break;
-case CSS_PROP_LIST_STYLE_IMAGE:
-break;
-case CSS_PROP_LIST_STYLE_POSITION:
-break;
-case CSS_PROP_LIST_STYLE_TYPE:
-break;
-case CSS_PROP_MARGIN_TOP:
-break;
-case CSS_PROP_MARGIN_RIGHT:
-break;
-case CSS_PROP_MARGIN_BOTTOM:
-break;
-case CSS_PROP_MARGIN_LEFT:
-break;
-case CSS_PROP_MAX_HEIGHT:
-break;
-case CSS_PROP_MAX_WIDTH:
-break;
-case CSS_PROP_MIN_HEIGHT:
-break;
-case CSS_PROP_MIN_WIDTH:
-break;
-case CSS_PROP_ORPHANS:
-break;
-case CSS_PROP_OUTLINE_COLOR:
-break;
-case CSS_PROP_OUTLINE_STYLE:
-break;
-case CSS_PROP_OUTLINE_WIDTH:
-break;
-case CSS_PROP_OVERFLOW_X:
-break;
-case CSS_PROP_PADDING_TOP:
-break;
-case CSS_PROP_PADDING_RIGHT:
-break;
-case CSS_PROP_PADDING_BOTTOM:
-break;
-case CSS_PROP_PADDING_LEFT:
-break;
-case CSS_PROP_PAGE_BREAK_AFTER:
-break;
-case CSS_PROP_PAGE_BREAK_BEFORE:
-break;
-case CSS_PROP_PAGE_BREAK_INSIDE:
-break;
-case CSS_PROP_PAUSE_AFTER:
-break;
-case CSS_PROP_PAUSE_BEFORE:
-break;
-case CSS_PROP_PITCH_RANGE:
-break;
-case CSS_PROP_PITCH:
-break;
-case CSS_PROP_PLAY_DURING:
-break;
-case CSS_PROP_POSITION:
-break;
-case CSS_PROP_QUOTES:
-break;
-case CSS_PROP_RICHNESS:
-break;
-case CSS_PROP_RIGHT:
-break;
-case CSS_PROP_SPEAK_HEADER:
-break;
-case CSS_PROP_SPEAK_NUMERAL:
-break;
-case CSS_PROP_SPEAK_PUNCTUATION:
-break;
-case CSS_PROP_SPEAK:
-break;
-case CSS_PROP_SPEECH_RATE:
-break;
-case CSS_PROP_STRESS:
-break;
-case CSS_PROP_TABLE_LAYOUT:
-break;
-case CSS_PROP_TEXT_ALIGN:
-break;
-case CSS_PROP_TEXT_DECORATION:
-break;
-case CSS_PROP_TEXT_INDENT:
-break;
-case CSS_PROP_TEXT_TRANSFORM:
-break;
-case CSS_PROP_TOP:
-break;
-case CSS_PROP_UNICODE_BIDI:
-break;
-case CSS_PROP_VERTICAL_ALIGN:
-break;
-case CSS_PROP_VISIBILITY:
-break;
-case CSS_PROP_VOICE_FAMILY:
-break;
-case CSS_PROP_VOLUME:
-break;
-case CSS_PROP_WHITE_SPACE:
-break;
-case CSS_PROP_WIDOWS:
-break;
-case CSS_PROP_WIDTH:
-break;
-case CSS_PROP_WORD_SPACING:
-break;
-case CSS_PROP_Z_INDEX:
-break;
-case CSS_PROP_OPACITY:
-break;
-case CSS_PROP_BREAK_AFTER:
-break;
-case CSS_PROP_BREAK_BEFORE:
-break;
-case CSS_PROP_BREAK_INSIDE:
-break;
-case CSS_PROP_COLUMN_COUNT:
-break;
-case CSS_PROP_COLUMN_FILL:
-break;
-case CSS_PROP_COLUMN_GAP:
-break;
-case CSS_PROP_COLUMN_RULE_COLOR:
-break;
-case CSS_PROP_COLUMN_RULE_STYLE:
-break;
-case CSS_PROP_COLUMN_RULE_WIDTH:
-break;
-case CSS_PROP_COLUMN_SPAN:
-break;
-case CSS_PROP_COLUMN_WIDTH:
-break;
-case CSS_PROP_WRITING_MODE:
-break;
-case CSS_PROP_OVERFLOW_Y:
-break;
-case CSS_PROP_BOX_SIZING:
-break;
+  uint64_t style;
+  const uint64_t NOT_IMPLEMENTED = 0xffffffffffffffff;
+
+  switch (prop)
+  {
+    case CSS_PROP_AZIMUTH:
+      style = NOT_IMPLEMENTED;
+      break;
+    case CSS_PROP_BACKGROUND_ATTACHMENT:
+      style = css_computed_background_attachment(s);
+      break;
+    case CSS_PROP_BACKGROUND_COLOR:
+      css_color* color;
+      style = css_computed_background_color(s, color);
+      style += ((uint64_t) (*color)) * 0x100;
+      break;
+    case CSS_PROP_BACKGROUND_IMAGE:
+      lwc_string* url;
+      css_computed_background_image(s, &url);
+      style = (uint64_t) url;
+      break;
+    case CSS_PROP_BACKGROUND_POSITION:
+      /*
+       * TODO: Need to find a way to fit two uint32_t and one uint8_t in our
+       * uint64_t. Might need a breakthrough in quantum computers for this.
+       */
+      style = NOT_IMPLEMENTED;
+      break;
+    case CSS_PROP_BACKGROUND_REPEAT:
+      style = css_computed_background_repeat(s);
+      break;
+    case CSS_PROP_BORDER_COLLAPSE:
+      style = css_computed_border_collapse(s);
+      break;
+    case CSS_PROP_BORDER_SPACING:
+      style = NOT_IMPLEMENTED;
+      break;
+    case CSS_PROP_BORDER_TOP_COLOR:
+      css_color* color;
+      style = css_computed_border_top_color(s, color);
+      style += ((uint64_t) (*color)) * 0x100;
+      break;
+    case CSS_PROP_BORDER_RIGHT_COLOR:
+      css_color* color;
+      style = css_computed_border_right_color(s, color);
+      style += ((uint64_t) (*color)) * 0x100;
+      break;
+    case CSS_PROP_BORDER_BOTTOM_COLOR:
+      css_color* color;
+      style = css_computed_border_bottom_color(s, color);
+      style += ((uint64_t) (*color)) * 0x100;
+      break;
+    case CSS_PROP_BORDER_LEFT_COLOR:
+      css_color* color;
+      style = css_computed_border_left_color(s, color);
+      style += ((uint64_t) (*color)) * 0x100;
+      break;
+    case CSS_PROP_BORDER_TOP_STYLE:
+      style = css_computed_border_top_style(s);
+      break;
+    case CSS_PROP_BORDER_RIGHT_STYLE:
+      style = css_computed_border_right_style(s);
+      break;
+    case CSS_PROP_BORDER_BOTTOM_STYLE:
+      style = css_computed_border_bottom_style(s);
+      break;
+    case CSS_PROP_BORDER_LEFT_STYLE:
+      style = css_computed_border_left_style(s);
+      break;
+    case CSS_PROP_BORDER_TOP_WIDTH:
+      css_fixed* width; /* = int32_t */
+      css_unit* unit; /* A number literal */
+      style = css_computed_border_top_width(s, width, unit);
+      style += ((uint64_t) (*width)) * 0x100;
+      style += ((uint64_t) (*unit)) * 0x10000000000;
+      break;
+    case CSS_PROP_BORDER_RIGHT_WIDTH:
+      css_fixed* width;
+      css_unit* unit;
+      style = css_computed_border_right_width(s, width, unit);
+      style += ((uint64_t) (*width)) * 0x100;
+      style += ((uint64_t) (*unit)) * 0x10000000000;
+      break;
+    case CSS_PROP_BORDER_BOTTOM_WIDTH:
+      css_fixed* width;
+      css_unit* unit;
+      style = css_computed_border_bottom_width(s, width, unit);
+      style += ((uint64_t) (*width)) * 0x100;
+      style += ((uint64_t) (*unit)) * 0x10000000000;
+      break;
+    case CSS_PROP_BORDER_LEFT_WIDTH:
+      css_fixed* width;
+      css_unit* unit;
+      style = css_computed_border_left_width(s, width, unit);
+      style += ((uint64_t) (*width)) * 0x100;
+      style += ((uint64_t) (*unit)) * 0x10000000000;
+      break;
+    case CSS_PROP_BOTTOM:
+      css_fixed* length;
+      css_unit* unit;
+      style = css_computed_bottom(s, length, unit);
+      style += ((uint64_t) (*length)) * 0x100;
+      style += ((uint64_t) (*unit)) * 0x10000000000;
+      break;
+    case CSS_PROP_CAPTION_SIDE:
+      style = css_computed_caption_side(s);
+      break;
+    case CSS_PROP_CLEAR:
+      style = css_computed_clear(s);
+      break;
+    case CSS_PROP_CLIP:
+      break;
+    case CSS_PROP_COLOR:
+      break;
+    case CSS_PROP_CONTENT:
+      break;
+    case CSS_PROP_COUNTER_INCREMENT:
+      break;
+    case CSS_PROP_COUNTER_RESET:
+      break;
+    case CSS_PROP_CUE_AFTER:
+      break;
+    case CSS_PROP_CUE_BEFORE:
+      break;
+    case CSS_PROP_CURSOR:
+      break;
+    case CSS_PROP_DIRECTION:
+      break;
+    case CSS_PROP_DISPLAY:
+      break;
+    case CSS_PROP_ELEVATION:
+      break;
+    case CSS_PROP_EMPTY_CELLS:
+      break;
+    case CSS_PROP_FLOAT:
+      break;
+    case CSS_PROP_FONT_FAMILY:
+      break;
+    case CSS_PROP_FONT_SIZE:
+      break;
+    case CSS_PROP_FONT_STYLE:
+      break;
+    case CSS_PROP_FONT_VARIANT:
+      break;
+    case CSS_PROP_FONT_WEIGHT:
+      break;
+    case CSS_PROP_HEIGHT:
+      break;
+    case CSS_PROP_LEFT:
+      break;
+    case CSS_PROP_LETTER_SPACING:
+      break;
+    case CSS_PROP_LINE_HEIGHT:
+      break;
+    case CSS_PROP_LIST_STYLE_IMAGE:
+      break;
+    case CSS_PROP_LIST_STYLE_POSITION:
+      break;
+    case CSS_PROP_LIST_STYLE_TYPE:
+      break;
+    case CSS_PROP_MARGIN_TOP:
+      break;
+    case CSS_PROP_MARGIN_RIGHT:
+      break;
+    case CSS_PROP_MARGIN_BOTTOM:
+      break;
+    case CSS_PROP_MARGIN_LEFT:
+      break;
+    case CSS_PROP_MAX_HEIGHT:
+      break;
+    case CSS_PROP_MAX_WIDTH:
+      break;
+    case CSS_PROP_MIN_HEIGHT:
+      break;
+    case CSS_PROP_MIN_WIDTH:
+      break;
+    case CSS_PROP_ORPHANS:
+      break;
+    case CSS_PROP_OUTLINE_COLOR:
+      break;
+    case CSS_PROP_OUTLINE_STYLE:
+      break;
+    case CSS_PROP_OUTLINE_WIDTH:
+      break;
+    case CSS_PROP_OVERFLOW_X:
+      break;
+    case CSS_PROP_PADDING_TOP:
+      break;
+    case CSS_PROP_PADDING_RIGHT:
+      break;
+    case CSS_PROP_PADDING_BOTTOM:
+      break;
+    case CSS_PROP_PADDING_LEFT:
+      break;
+    case CSS_PROP_PAGE_BREAK_AFTER:
+      break;
+    case CSS_PROP_PAGE_BREAK_BEFORE:
+      break;
+    case CSS_PROP_PAGE_BREAK_INSIDE:
+      break;
+    case CSS_PROP_PAUSE_AFTER:
+      break;
+    case CSS_PROP_PAUSE_BEFORE:
+      break;
+    case CSS_PROP_PITCH_RANGE:
+      break;
+    case CSS_PROP_PITCH:
+      break;
+    case CSS_PROP_PLAY_DURING:
+      break;
+    case CSS_PROP_POSITION:
+      break;
+    case CSS_PROP_QUOTES:
+      break;
+    case CSS_PROP_RICHNESS:
+      break;
+    case CSS_PROP_RIGHT:
+      break;
+    case CSS_PROP_SPEAK_HEADER:
+      break;
+    case CSS_PROP_SPEAK_NUMERAL:
+      break;
+    case CSS_PROP_SPEAK_PUNCTUATION:
+      break;
+    case CSS_PROP_SPEAK:
+      break;
+    case CSS_PROP_SPEECH_RATE:
+      break;
+    case CSS_PROP_STRESS:
+      break;
+    case CSS_PROP_TABLE_LAYOUT:
+      break;
+    case CSS_PROP_TEXT_ALIGN:
+      break;
+    case CSS_PROP_TEXT_DECORATION:
+      break;
+    case CSS_PROP_TEXT_INDENT:
+      break;
+    case CSS_PROP_TEXT_TRANSFORM:
+      break;
+    case CSS_PROP_TOP:
+      break;
+    case CSS_PROP_UNICODE_BIDI:
+      break;
+    case CSS_PROP_VERTICAL_ALIGN:
+      break;
+    case CSS_PROP_VISIBILITY:
+      break;
+    case CSS_PROP_VOICE_FAMILY:
+      break;
+    case CSS_PROP_VOLUME:
+      break;
+    case CSS_PROP_WHITE_SPACE:
+      break;
+    case CSS_PROP_WIDOWS:
+      break;
+    case CSS_PROP_WIDTH:
+      break;
+    case CSS_PROP_WORD_SPACING:
+      break;
+    case CSS_PROP_Z_INDEX:
+      break;
+    case CSS_PROP_OPACITY:
+      break;
+    case CSS_PROP_BREAK_AFTER:
+      break;
+    case CSS_PROP_BREAK_BEFORE:
+      break;
+    case CSS_PROP_BREAK_INSIDE:
+      break;
+    case CSS_PROP_COLUMN_COUNT:
+      break;
+    case CSS_PROP_COLUMN_FILL:
+      break;
+    case CSS_PROP_COLUMN_GAP:
+      break;
+    case CSS_PROP_COLUMN_RULE_COLOR:
+      break;
+    case CSS_PROP_COLUMN_RULE_STYLE:
+      break;
+    case CSS_PROP_COLUMN_RULE_WIDTH:
+      break;
+    case CSS_PROP_COLUMN_SPAN:
+      break;
+    case CSS_PROP_COLUMN_WIDTH:
+      break;
+    case CSS_PROP_WRITING_MODE:
+      break;
+    case CSS_PROP_OVERFLOW_Y:
+      break;
+    case CSS_PROP_BOX_SIZING:
+      break;
+    default:
+      style = NOT_IMPLEMENTED;
+      break;
+  }
+
+  return style;
 }
 
 const int UA_FONT_SIZE = js_ua_font_size();
