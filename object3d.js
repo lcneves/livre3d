@@ -44,6 +44,7 @@ module.exports = class Object3D extends THREE.Object3D {
 
     this._parent = parentObject;
     this._isw3dObject = true;
+    this._hasBackground = (this.style('background-color') !== '#00000000');
   }
 };
 
@@ -52,16 +53,8 @@ const object3DPrototype = {
     return objectUtils.getFontSize(this);
   },
 
-  getStyle (property) {
-    if (this._style[property] !== undefined) {
-      return this._style[property];
-    }
-    else if (this._parent) {
-      return this._parent.getStyle(property);
-    }
-    else {
-      return undefined;
-    }
+  get style () {
+    return style.getStyle(this);
   },
 
   resize () {
@@ -123,13 +116,19 @@ const object3DPrototype = {
     }
   },
 
-  makeStyle () {
-    this._style = style.make(this);
-
-    if (this._style['background-color'] !== undefined) {
-      this._hasBackground = true;
+  get attributes () {
+    var props = [];
+    for (let key in this._ht3d) {
+      if (key !== 'tag') {
+        props.push({
+          attribute: key,
+          value: props[key]
+        });
+      }
     }
+    return props;
   },
+
 
   makeText () {
     const text = require('./text.js');

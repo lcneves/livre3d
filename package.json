@@ -28,7 +28,8 @@
   "homepage": "https://github.com/lcneves/w3d#readme",
   "dependencies": {
     "object-hash": "^1.1.8",
-    "three": "^0.85.2"
+    "three": "^0.85.2",
+    "libcss-w3d": "latest"
   },
   "devDependencies": {
     "babel-preset-env": "latest",

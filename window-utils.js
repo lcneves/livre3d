@@ -50,7 +50,7 @@ module.exports = {
   },
 
   get worldHeight () {
-    return _worldWidth / windowWidth * windowHeight;
+    return _worldWidth / _windowWidth * _windowHeight;
   },
 
   get worldDepth () {
