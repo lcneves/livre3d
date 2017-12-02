@@ -10,30 +10,33 @@
 
 const THREE = require('three');
 const fontLoader = new THREE.FontLoader();
-const load = require('./load-resources.js');
-const style = require('./style.js');
+const xhr = require('./utils/xhr.js');
 
-const styles = document.getElementsByTagName('w3d-style');
 const lights = document.getElementsByTagName('w3d-light');
 const camera = document.getElementsByTagName('w3d-camera')[0];
-const objects = document.getElementsByTagName('w3d-objects');
-const fonts = document.getElementsByTagName('w3d-fonts');
+const fonts = document.getElementsByTagName('w3d-font');
 
-for (let s of styles) {
-  if (s && s.attributes && s.attributes.href &&
-      typeof s.attributes.href.value === 'string') {
-    load.xhr(s.attributes.href.value).then(data => {
-      if (data && typeof data === 'string') {
-        style.addSheet(data);
-      }
-    });
-  }
-}
+const fontSansRegular = require('./fonts/droid_sans_regular.typeface.json');
+const fontSansBold = require('./fonts/droid_sans_bold.typeface.json');
+const fontSerifRegular = require('./fonts/droid_serif_regular.typeface.json');
+const fontSerifBold = require('./fonts/droid_serif_bold.typeface.json');
+const fssr = fontLoader.parse(fontSansRegular);
+const fssb = fontLoader.parse(fontSansBold);
+const fser = fontLoader.parse(fontSerifRegular);
+const fseb = fontLoader.parse(fontSerifBold);
 
 var theme = {
   resources: {
-    fonts: {},
-    objects: {},
+    fonts: {
+      'sans-serif': {
+        'normal': new Promise(resolve => resolve(fssr)),
+        'bold': new Promise(resolve => resolve(fssb))
+      },
+      'serif': {
+        'normal': new Promise(resolve => resolve(fser)),
+        'bold': new Promise(resolve => resolve(fseb))
+      }
+    }
   },
   lights: [
     { type: 'ambient' },
@@ -67,27 +70,27 @@ if (camera) {
     theme.nearFarRatio = camera.attributes['nf-ratio'];
 }
 
-/*
- * TODO: Load fonts and objects following the model below.
- *       Maybe import serif and sans-serif JSON fonts to engine?
+// Load (or override) fonts
+for (let f of fonts) {
+  if (!f.attributes['family'] ||
+      typeof f.attributes['family']['value'] !== 'string')
+    throw new Error('w3d-font tag needs a "family" attribute!');
+  if (!f.attributes['src'] ||
+      typeof f.attributes['src']['value'] !== 'string')
+    throw new Error('w3d-font tag needs a "src" attribute!');
 
-module.exports.init = function (theme) {
-  Object.assign(module.exports, theme);
+  if (!theme.resources.fonts[f.attributes['family']['value']])
+    theme.resources.fonts[f.attributes['family']['value']] = {};
 
-  // Parses 3D font JSON into three.js Font objects
-  if (module.exports.resources && module.exports.resources.fonts) {
-    for (let key in module.exports.resources.fonts) {
-      module.exports.resources.fonts[key].fontPromise =
-        new Promise(resolve => {
-          module.exports.resources.fonts[key].dataPromise.then(json => {
-            let font = fontLoader.parse(json);
-            resolve(font);
-          });
-        });
-    }
-  }
-};
-
-*/
+  let weight = f.attributes['weight']
+    ? f.attributes['weight']['value'] : 'normal';
+  theme.resources.fonts[f.attributes['family']['value']][weight] =
+      new Promise(resolve => {
+    xhr(f.attributes['src']['value'], 'json').then(data => {
+      var font = fontLoader.parse(data);
+      resolve(font);
+    });
+  });
+}
 
 module.exports = theme;

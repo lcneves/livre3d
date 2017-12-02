@@ -9,13 +9,14 @@
 
 const THREE = require('three');
 
+const style = require('./style.js');
 const theme = require('./theme.js');
-
 const Object3D = require('./object3d.js');
 const Body = require('./body.js');
 const Camera = require('./camera.js');
 const windowUtils = require('./window-utils.js');
 const messages = require('./messages.js');
+const ua = require('./style/ua.js');
 
 const far =
   theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -89,6 +90,26 @@ function render () {
   arrangeObjects();
   renderer.render(scene, camera);
   requestAnimationFrame(render);
+}
+
+function setStyles () {
+  style.dropSheets();
+  style.addSheet(ua, { origin: 'ua' });
+
+  const styles = document.getElementsByTagName('w3d-style');
+  for (let s of styles) {
+    if (s && s.attributes && s.attributes.src &&
+      typeof s.attributes.src.value === 'string') {
+      xhr(s.attributes.src.value)
+        .then(data => {
+          if (data && typeof data === 'string') {
+            style.addSheet(data);
+          }
+        })
+        .catch(status => console.error('Unable to fetch CSS at '
+          + s.attributes.src.value + ' ; status: ' + status));
+    }
+  }
 }
 
 function resetScene () {
@@ -187,6 +208,7 @@ function importTemplate(templateName, parentObject) {
 
 module.exports = {
   reset: resetScene,
+  setStyles: setStyles,
   importTemplate: importTemplate
 };
 

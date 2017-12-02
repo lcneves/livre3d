@@ -11,9 +11,6 @@
 
 module.exports = function (app) {
 
-  require('./theme.js').init(app.theme);
-  require('./templates.js').init(app.templates);
-
   const engine = require('./engine.js');
   return engine;
 };
