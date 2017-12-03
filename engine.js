@@ -14,6 +14,7 @@ const theme = require('./theme.js');
 const Object3D = require('./object3d.js');
 const Body = require('./body.js');
 const Camera = require('./camera.js');
+const ht3d = require('./ht3d.js');
 const windowUtils = require('./window-utils.js');
 const messages = require('./messages.js');
 const ua = require('./style/ua.js');
@@ -45,12 +46,17 @@ var camera = new Camera(
 
 var body = new Body();
 
+ht3d.parse(document.body.innerHTML, body);
+document.body.innerHTML = '';
+document.body.style.margin = '0';
+
 var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.style.display = 'block';
 document.body.appendChild(renderer.domElement);
 
 // Resize canvas on window resize
@@ -204,6 +210,9 @@ function importTemplate(templateName, parentObject) {
     template: templateName,
     setParent: parentObject
   }), { rearrange: true });
+}
+
+function importBody () {
 }
 
 module.exports = {

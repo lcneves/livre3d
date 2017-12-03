@@ -23,12 +23,6 @@ module.exports = class Object3D extends THREE.Object3D {
 
     options = (options && typeof options === 'object') ? options : {};
 
-    // This passes a parameter to the HT3D parser that will be incorporated
-    // in the resulting Object3D as the `_parent` property. It is necessary
-    // for inheritance of style properties without messing with THREE's
-    // `parent` property.
-    var parentObject = options.setParent ? options.setParent : null;
-
     if (options.hypertext) {
       return ht3d.parse(options.hypertext, parentObject);
     }
@@ -42,9 +36,9 @@ module.exports = class Object3D extends THREE.Object3D {
       super.add(options.mesh);
     }
 
-    this._parent = parentObject;
+    this.parent = parentObject;
     this._isw3dObject = true;
-    this._hasBackground = (this.style('background-color') !== '#00000000');
+    this._hasBackground = (this.style['background-color'] !== '#00000000');
   }
 };
 
@@ -77,7 +71,7 @@ const object3DPrototype = {
 
   get stretchedDimensions () {
     if (!this._stretchedDimensions) {
-      this._stretchedDimensions = this._parent
+      this._stretchedDimensions = this.parent
         ? objectUtils.getStretchedDimensions(this)
         : this.dimensions;
     }
@@ -149,13 +143,11 @@ const object3DPrototype = {
   add (object, options) {
     THREE.Object3D.prototype.add.call(this, object);
 
-    object._parent = this;
-
     if (options && options.rearrange) {
 
       var topObject = this;
-      while (topObject._parent && topObject._parent._isw3dObject) {
-        topObject = topObject._parent;
+      while (topObject.parent && topObject.parent._isw3dObject) {
+        topObject = topObject.parent;
       }
       messages.setMessage('needsArrange', topObject);
     }

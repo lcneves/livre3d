@@ -21,7 +21,7 @@ class Background extends THREE.Mesh {
     if (object && object._isw3dObject) {
       var size = object.size;
       var material = new THREE.MeshLambertMaterial({
-        color: object.getStyle('background-color')
+        color: object.style['background-color']
       });
       var geometry = new THREE.PlaneGeometry(size.x, size.y);
       super(geometry, material);
@@ -55,7 +55,7 @@ importPrototype(Background.prototype, objectCommons);
 importPrototype(Background.prototype, backgroundPrototype);
 
 function getAxes (object) {
-  var direction = object.getStyle('direction');
+  var direction = object.style['direction'];
   var axes;
 
   switch (direction) {
@@ -243,15 +243,15 @@ function alignChildren (parent) {
 }
 
 function align (object) {
-  const parent = object._parent || object.parent;
+  const parent = object.parent || object.parent;
   const crossAxis = getAxes(parent)['cross'];
   const crossSize = parent.innerSize[crossAxis];
   const freeSpace = Math.max(crossSize - object.outerSize[crossAxis], 0);
   const sizeSign = crossAxis === 'y' ? -1 : 1;
   const alignSelf = object._isw3dObject
-    ? object.getStyle('align-self') : 'initial';
+    ? object.style['align-self'] : 'initial';
   const align = alignSelf !== 'initial'
-    ? alignSelf : parent.getStyle('align-items');
+    ? alignSelf : parent.style['align-items'];
 
   switch (align) {
     case 'start':
@@ -377,7 +377,7 @@ function getContentContribution (object, minMax) {
     return object.size;
   }
 
-  const wrap = object.getStyle('wrap');
+  const wrap = object.style['wrap'];
   const mainAxis = getAxes(object)['main'];
 
   var virtualBox = minMax === 'min'
@@ -569,7 +569,7 @@ function positionLine (
   for (let i = firstChild; i <= lastChild; i++) {
     let child = object.children[i];
     childrenSizeMain += child.outerSize[axes['main']];
-    totalCSSGrow += child._isw3dObject ? child.getStyle('grow') : 0;
+    totalCSSGrow += child._isw3dObject ? child.style['grow'] : 0;
   }
 
   var mainSize = 0;
@@ -585,7 +585,7 @@ function positionLine (
 
     if (child._isw3dObject) {
       let grow = child._isw3dObject
-        ? child.getStyle('grow') : 0;
+        ? child.style['grow'] : 0;
       let growFactorCSS = totalCSSGrow
         ? grow / totalCSSGrow : 0;
       let newOuterDimensions = {};
@@ -638,8 +638,8 @@ function getAlignmentRules (object) {
   // text-align supercedes justify-content
   var general;
   var last;
-  const textAlign = object.getStyle('text-align');
-  const justifyContent = object.getStyle('justify-content');
+  const textAlign = object.style['text-align'];
+  const justifyContent = object.style['justify-content'];
 
   if (textAlign !== 'initial') {
     switch (textAlign) {
@@ -680,7 +680,7 @@ function getAlignmentRules (object) {
 
 function positionChildren (object) {
   const objectAxes = getAxes(object);
-  const wrap = (object.getStyle('wrap') === 'wrap');
+  const wrap = (object.style['wrap'] === 'wrap');
   const alignmentRules = getAlignmentRules(object);
 
   var initialOffset = makeInitialOffset(object);
@@ -754,9 +754,9 @@ function positionChildren (object) {
 }
 
 function getFontSize (object) {
-  const parsed = units.parse(object.getStyle('font-size'));
+  const parsed = units.parse(object.style['font-size']);
   if (parsed.unit === 'em') {
-    return object._parent.fontSize * parsed.quantum;
+    return object.parent.fontSize * parsed.quantum;
   }
   else {
     return units.convert(object, 'font-size');
