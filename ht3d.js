@@ -2,101 +2,49 @@
  * ht3d.js
  * Copyright 2017 Lucas Neves <lcneves@gmail.com>
  *
- * Exports a function that parses an HT3D string and returns a w3d object.
+ * Exports a function that parses an HT3D string, creates a tree of w3d objects
+ * and adds them to the provided parent object.
  * Part of the Livre project.
  */
 
 'use strict';
 
 const Object3D = require('./object3d.js');
+const htmlparser = require('htmlparser2');
+
+var currentObject;
+
+var parser = new htmlparser.Parser({
+  onopentag: function(tagName, attribs) {
+    var object = new Object3D();
+    object.setProperty('tag', tagName);
+
+    for (let a in attribs) {
+      if (attribs.hasOwnProperty(a)) {
+        object.setProperty(a, attribs[a]);
+      }
+    }
+
+    currentObject.add(object);
+    currentObject = object;
+  },
+  ontext: function (text) {
+    currentObject.setProperty('text', text.trim());
+    currentObject.makeText();
+  },
+  onclosetag: function (tagName) {
+    currentObject = currentObject.parent;
+  }
+}, {
+  decodeEntities: true,
+  lowerCaseTags: true,
+  lowerCaseAttributeNames: true,
+  recognizeSelfClosing: true
+});
 
 function parse (html, parentObject) {
-
-  var array = html.split('>');
-  for (let index = 0; index < array.length; index++) {
-    while (array[index].indexOf('<') > 0) {
-      var text = array[index].substring(0, array[index].indexOf('<')).trim();
-      var newTag = array[index].substring(array[index].indexOf('<')).trim();
-      array[index] = newTag;
-      if (text) { array.splice(index, 0, text); }
-    }
-
-    array[index] = array[index].trim();
-  }
-
-  function getTagName(line) {
-    var re = /^<(\w+)/gi;
-    var results = re.exec(line);
-    return results[1];
-  }
-
-  function getProps(line) {
-    var re = /([\w-]+)="([\w\s-]+)"/gi;
-    var results = [];
-    var prop;
-    while ((prop = re.exec(line)) !== null) {
-      let value = prop[1] === 'class' ? prop[2].split(' ') : prop[2];
-      results.push({ name: prop[1], value: value });
-    }
-    return results;
-  }
-
-  function checkSelfClose (line) {
-    return (line.charAt(line.length - 1) === '/');
-  }
-
-  function closeTag () {
-    if (currentObject) {
-      currentObject.makeText();
-
-      if (currentObject.parent) {
-        currentObject = currentObject.parent;
-      }
-    }
-  }
-
-  function parseTagLine (line) {
-    var tagName = getTagName(line);
-    var props = getProps(line);
-
-    if (tagName) {
-      var object = new Object3D();
-      object._parent = parentObject;
-      object.setProperty('tag', tagName);
-
-      for (let prop of props) {
-        object.setProperty(prop.name, prop.value);
-      }
-
-      object.makeStyle();
-
-      if (currentObject) {
-        currentObject.add(object);
-      }
-      currentObject = object;
-    }
-
-    if (checkSelfClose(line)) {
-      closeTag();
-    }
-  }
-
-  var currentObject = null;
-  for (let line of array) {
-    if (line.charAt(0) === '<') {
-      if (line.charAt(1) === '/') {
-        closeTag();
-      }
-      else {
-        parseTagLine(line);
-      }
-    }
-    else if (currentObject && line) {
-      currentObject.setProperty('text', line);
-    }
-  }
-
-  return currentObject;
+  currentObject = parentObject;
+  parser.parseComplete(html);
 }
 
 module.exports.parse = parse;

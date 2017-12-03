@@ -27,9 +27,10 @@
   },
   "homepage": "https://github.com/lcneves/w3d#readme",
   "dependencies": {
+    "htmlparser2": "^3.9.2",
+    "libcss-w3d": "latest",
     "object-hash": "^1.1.8",
-    "three": "^0.85.2",
-    "libcss-w3d": "latest"
+    "three": "^0.85.2"
   },
   "devDependencies": {
     "babel-preset-env": "latest",
