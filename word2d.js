@@ -86,7 +86,7 @@ class Word2D extends Object3D {
       throw new Error('Invalid word!');
     }
 
-    super({ setParent: parentObject });
+    super();
 
     this._isWord2D = true;
     this._originalWorldToPixels = windowUtils.worldToPixels;

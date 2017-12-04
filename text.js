@@ -18,6 +18,7 @@ const theme = require('./theme.js');
 const Word2D = require('./word2d.js');
 
 const CURVE_SEGMENTS = 12;
+const FONT_SIZE_HEIGHT_RATIO = 4;
 
 class TextMesh extends THREE.Mesh {
   constructor (geometry, material) {
@@ -45,9 +46,8 @@ objectUtils.importPrototype(TextMesh.prototype, textMeshPrototype);
 function makeText3D (object) {
   const text = object.getProperty('text');
 
-  var fontPromise = theme.resources.fonts[
-    object.getStyle('font-family') + '-' + object.getStyle('font-weight')
-  ].fontPromise;
+  var fontPromise = theme.resources.fonts[object.style['font-family']][
+    object.style['font-weight']];
 
   return new Promise(resolve => {
     fontPromise.then(font => {
@@ -55,15 +55,17 @@ function makeText3D (object) {
         fontLoader.parse(font);
       }
 
+      var size = units.convert(object, 'font-size', 'world');
       var geometry = new THREE.TextGeometry(text, {
         font: font,
-        size: units.convert(object, 'font-size', 'world'),
-        height: units.convert(object, 'font-height', 'world'),
+        size: size,
+        /* TODO: implement font-height as CSS property. */
+        height: size / FONT_SIZE_HEIGHT_RATIO,
         curveSegments: CURVE_SEGMENTS,
         bevelEnabled: false
       });
       var material = new THREE.MeshPhongMaterial(
-        { color: object.getStyle('color') }
+        { color: objectUtils.parseColor(object.getStyle('color')) }
       );
       var mesh = new TextMesh(geometry, material);
 
@@ -79,7 +81,7 @@ function makeText2D (object) {
     const style = {
       fontSize: units.convert(object, 'font-size'),
       fontFamily: object.getStyle('font-family'),
-      color: object.getStyle('color')
+      color: objectUtils.parseColor(object.getStyle('color'))
     };
 
     for (let i = 0; i < wordArray.length; i++) {

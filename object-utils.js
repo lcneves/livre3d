@@ -16,12 +16,18 @@ const units = require('./units.js');
 const AXES = ['x', 'y', 'z'];
 const CSS_AXES = ['width', 'height', 'depth'];
 
+function parseColor (colorString) {
+  // Extracts a hexadecimal color number out of a #aarrggbb string.
+  colorString = colorString.substring(3); // Drop hash and alpha
+  return parseInt(colorString, 16);
+}
+
 class Background extends THREE.Mesh {
   constructor (object) {
     if (object && object._isw3dObject) {
       var size = object.size;
       var material = new THREE.MeshLambertMaterial({
-        color: object.style['background-color']
+        color: parseColor(object.style['background-color'])
       });
       var geometry = new THREE.PlaneGeometry(size.x, size.y);
       super(geometry, material);
@@ -835,5 +841,6 @@ Object.assign(module.exports, {
   importPrototype: importPrototype,
   isHeader: isHeader,
   positionChildren: positionChildren,
-  updateBackground: updateBackground
+  updateBackground: updateBackground,
+  parseColor: parseColor
 });

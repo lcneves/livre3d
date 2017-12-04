@@ -7,6 +7,13 @@
 
 'use strict';
 
+require('babel-polyfill');
+
+// First things first: let's hide all boring 2D content.
+for (let c of document.body.children)
+  c.style.display = 'none';
+document.body.style.margin = '0';
+
 const THREE = require('three');
 
 const style = require('./style.js');
@@ -18,6 +25,7 @@ const ht3d = require('./ht3d.js');
 const windowUtils = require('./window-utils.js');
 const messages = require('./messages.js');
 const ua = require('./style/ua.js');
+const xhr = require('./utils/xhr.js');
 
 const far =
   theme.worldWidth / (2 * Math.tan(theme.hfov / 2 * Math.PI / 180 ));
@@ -34,6 +42,7 @@ windowUtils.init(
   window.innerHeight
 );
 
+
 var updatables = [];
 
 var scene;
@@ -43,12 +52,6 @@ var camera = new Camera(
   theme.hfov,
   dimensions
 );
-
-var body = new Body();
-
-ht3d.parse(document.body.innerHTML, body);
-document.body.innerHTML = '';
-document.body.style.margin = '0';
 
 var renderer = new THREE.WebGLRenderer({
   antialias: true
@@ -99,59 +102,63 @@ function render () {
 }
 
 function setStyles () {
-  style.dropSheets();
-  style.addSheet(ua, { origin: 'ua' });
+  return new Promise(resolve => {
+    style.dropSheets();
+    style.addSheet(ua, { origin: 'ua' });
 
-  const styles = document.getElementsByTagName('w3d-style');
-  for (let s of styles) {
-    if (s && s.attributes && s.attributes.src &&
-      typeof s.attributes.src.value === 'string') {
-      xhr(s.attributes.src.value)
-        .then(data => {
-          if (data && typeof data === 'string') {
-            style.addSheet(data);
-          }
-        })
-        .catch(status => console.error('Unable to fetch CSS at '
-          + s.attributes.src.value + ' ; status: ' + status));
+    var processed = 0;
+    const styles = document.getElementsByTagName('w3d-style');
+    for (let s of styles) {
+      if (s && s.attributes && s.attributes.src &&
+        typeof s.attributes.src.value === 'string') {
+        xhr(s.attributes.src.value)
+          .then(data => {
+            if (data && typeof data === 'string') {
+              style.addSheet(data);
+            }
+          })
+          .catch(status => console.error('Unable to fetch CSS at '
+            + s.attributes.src.value + ' ; status: ' + status))
+          .finally(() => {
+            if (styles.length === ++processed) resolve();
+          });
+      }
+      else {
+        if (styles.length === ++processed) resolve();
+      }
     }
   }
 }
 
-function resetScene () {
-  scene = new THREE.Scene();
-  if (theme.background) {
-    scene.background = new THREE.Color(theme.background);
-  }
+function configDirectionalLight (light) {
+  light.position.set(
+    dimensions.width / 2,
+    - dimensions.width / (2 * windowUtils.aspectRatio),
+    dimensions.near
+  );
+  light.shadow.camera.left = - dimensions.width / 2;
+  light.shadow.camera.right = dimensions.width / 2;
+  light.shadow.camera.bottom = - dimensions.width /
+    (2 * windowUtils.aspectRatio);
+  light.shadow.camera.top = dimensions.width /
+    (2 * windowUtils.aspectRatio);
+  light.shadow.camera.near = 0;
+  light.shadow.camera.far = dimensions.far - dimensions.near;
+  light.shadow.camera.updateProjectionMatrix();
+  light.shadow.mapSize.width = 1024;
+  light.shadow.mapSize.height = 1024;
 
-  function configDirectionalLight (light) {
-    light.position.set(
-      dimensions.width / 2,
-      - dimensions.width / (2 * windowUtils.aspectRatio),
-      dimensions.near
-    );
-    light.shadow.camera.left = - dimensions.width / 2;
-    light.shadow.camera.right = dimensions.width / 2;
-    light.shadow.camera.bottom = - dimensions.width /
-      (2 * windowUtils.aspectRatio);
-    light.shadow.camera.top = dimensions.width /
-      (2 * windowUtils.aspectRatio);
-    light.shadow.camera.near = 0;
-    light.shadow.camera.far = dimensions.far - dimensions.near;
-    light.shadow.camera.updateProjectionMatrix();
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
+}
 
-  }
+function configLightTarget (target) {
+  target.position.set(
+    dimensions.width / 2,
+    - dimensions.width / (2 * windowUtils.aspectRatio),
+    0
+  );
+}
 
-  function configLightTarget (target) {
-    target.position.set(
-      dimensions.width / 2,
-      - dimensions.width / (2 * windowUtils.aspectRatio),
-      0
-    );
-  }
-
+function addLights () {
   for (let light of theme.lights) {
     let newLight;
     switch (light.type) {
@@ -196,28 +203,29 @@ function resetScene () {
       scene.add(newLight);
     }
   }
-
-  body = new Body(window.innerWidth / window.innerHeight, dimensions);
-  scene.add(body);
-
-  render();
 }
 
-function importTemplate(templateName, parentObject) {
-  parentObject = parentObject || body;
+function resetScene () {
+  var makeBody = new Promise(resolve => {
+    setStyles().then(() => {
+      body = new Body(window.innerWidth / window.innerHeight, dimensions);
+      ht3d.parse(document.body.innerHTML, body);
+      resolve();
+    });
+  });
 
-  parentObject.add(new Object3D({
-    template: templateName,
-    setParent: parentObject
-  }), { rearrange: true });
+ var makeScene = new Promise(resolve => {
+    updatables = [];
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    addLights();
+    resolve();
+  });
+
+  Promise.all([ makeBody, makeScene ]).then(() => {
+    scene.add(body);
+    render();
+  });
 }
 
-function importBody () {
-}
-
-module.exports = {
-  reset: resetScene,
-  setStyles: setStyles,
-  importTemplate: importTemplate
-};
-
+resetScene();

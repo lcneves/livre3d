@@ -12,10 +12,16 @@
 const Object3D = require('./object3d.js');
 const htmlparser = require('htmlparser2');
 
+const knownTags = [ 'div', 'nav', 'footer', 'span', 'p', 'h1', 'h2', 'h3', 'h4',
+  'h5', 'h6', 'a', 'img', 'w3d-object' ];
+
 var currentObject;
 
 var parser = new htmlparser.Parser({
   onopentag: function(tagName, attribs) {
+    if (knownTags.indexOf(tagName) === -1)
+      return;
+
     var object = new Object3D();
     object.setProperty('tag', tagName);
 
