@@ -9,8 +9,5 @@
 
 'use strict';
 
-module.exports = function (app) {
-
-  const engine = require('./engine.js');
-  return engine;
-};
+require('babel-polyfill');
+require('./engine.js');

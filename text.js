@@ -65,7 +65,7 @@ function makeText3D (object) {
         bevelEnabled: false
       });
       var material = new THREE.MeshPhongMaterial(
-        { color: objectUtils.parseColor(object.getStyle('color')) }
+        { color: objectUtils.parseColor(object.style['color']) }
       );
       var mesh = new TextMesh(geometry, material);
 
@@ -80,8 +80,8 @@ function makeText2D (object) {
     var wordArray = object.getProperty('text').split(' ');
     const style = {
       fontSize: units.convert(object, 'font-size'),
-      fontFamily: object.getStyle('font-family'),
-      color: objectUtils.parseColor(object.getStyle('color'))
+      fontFamily: object.style['font-family'],
+      color: objectUtils.parseColor(object.style['color'])
     };
 
     for (let i = 0; i < wordArray.length; i++) {

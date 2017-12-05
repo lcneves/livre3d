@@ -13,36 +13,25 @@ const style = require('./style.js');
 const objectUtils = require('./object-utils.js');
 const objectCommons = require('./object-commons.js');
 const messages = require('./messages.js');
-const templates = require('./templates.js');
 
 module.exports = class Object3D extends THREE.Object3D {
   constructor (options) {
     super();
 
-    const ht3d = require('./ht3d.js');
-
     options = (options && typeof options === 'object') ? options : {};
-
-    if (options.hypertext) {
-      return ht3d.parse(options.hypertext, parentObject);
-    }
-
-    if (options.template) {
-      const hypertext = templates[options.template]();
-      return ht3d.parse(hypertext, parentObject);
-    }
-
     if (options.mesh) {
       super.add(options.mesh);
     }
 
-    this.parent = parentObject;
     this._isw3dObject = true;
-    this._hasBackground = (this.style['background-color'] !== '#00000000');
   }
 };
 
 const object3DPrototype = {
+  get _hasBackground () {
+    return (this.style['background-color'] !== '#00000000');
+  },
+
   get fontSize () {
     return objectUtils.getFontSize(this);
   },
@@ -116,7 +105,7 @@ const object3DPrototype = {
       if (key !== 'tag') {
         props.push({
           attribute: key,
-          value: props[key]
+          value: this._ht3d[key]
         });
       }
     }

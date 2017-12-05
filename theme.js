@@ -16,10 +16,14 @@ const lights = document.getElementsByTagName('w3d-light');
 const camera = document.getElementsByTagName('w3d-camera')[0];
 const fonts = document.getElementsByTagName('w3d-font');
 
-const fontSansRegular = require('./fonts/droid_sans_regular.typeface.json');
-const fontSansBold = require('./fonts/droid_sans_bold.typeface.json');
-const fontSerifRegular = require('./fonts/droid_serif_regular.typeface.json');
-const fontSerifBold = require('./fonts/droid_serif_bold.typeface.json');
+const fontSansRegular = require(
+  './fonts/droid/droid_sans_regular.typeface.json');
+const fontSansBold = require(
+  './fonts/droid/droid_sans_bold.typeface.json');
+const fontSerifRegular = require(
+  './fonts/droid/droid_serif_regular.typeface.json');
+const fontSerifBold = require(
+  './fonts/droid/droid_serif_bold.typeface.json');
 const fssr = fontLoader.parse(fontSansRegular);
 const fssb = fontLoader.parse(fontSansBold);
 const fser = fontLoader.parse(fontSerifRegular);
@@ -86,11 +90,11 @@ for (let f of fonts) {
     ? f.attributes['weight']['value'] : 'normal';
   theme.resources.fonts[f.attributes['family']['value']][weight] =
       new Promise(resolve => {
-    xhr(f.attributes['src']['value'], 'json').then(data => {
-      var font = fontLoader.parse(data);
-      resolve(font);
+      xhr(f.attributes['src']['value'], 'json').then(data => {
+        var font = fontLoader.parse(data);
+        resolve(font);
+      });
     });
-  });
 }
 
 module.exports = theme;

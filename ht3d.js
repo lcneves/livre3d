@@ -16,11 +16,14 @@ const knownTags = [ 'div', 'nav', 'footer', 'span', 'p', 'h1', 'h2', 'h3', 'h4',
   'h5', 'h6', 'a', 'img', 'w3d-object' ];
 
 var currentObject;
+var ignoredTag = false;
 
 var parser = new htmlparser.Parser({
   onopentag: function(tagName, attribs) {
-    if (knownTags.indexOf(tagName) === -1)
+    if (knownTags.indexOf(tagName) === -1) {
+      ignoredTag = true;
       return;
+    }
 
     var object = new Object3D();
     object.setProperty('tag', tagName);
@@ -35,11 +38,16 @@ var parser = new htmlparser.Parser({
     currentObject = object;
   },
   ontext: function (text) {
-    currentObject.setProperty('text', text.trim());
-    currentObject.makeText();
+    if (!ignoredTag) {
+      currentObject.setProperty('text', text.trim());
+      currentObject.makeText();
+    }
   },
-  onclosetag: function (tagName) {
-    currentObject = currentObject.parent;
+  onclosetag: function (tagNameIgnored) {
+    if (ignoredTag)
+      ignoredTag = false;
+    else
+      currentObject = currentObject.parent;
   }
 }, {
   decodeEntities: true,

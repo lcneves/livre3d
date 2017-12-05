@@ -19,8 +19,6 @@ class Body extends Object3D {
       class: '',
       id: ''
     };
-    this.makeStyle();
-
     this._isBody = true;
   }
 

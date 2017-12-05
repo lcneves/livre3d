@@ -7,8 +7,6 @@
 
 'use strict';
 
-require('babel-polyfill');
-
 // First things first: let's hide all boring 2D content.
 for (let c of document.body.children)
   c.style.display = 'none';
@@ -18,7 +16,6 @@ const THREE = require('three');
 
 const style = require('./style.js');
 const theme = require('./theme.js');
-const Object3D = require('./object3d.js');
 const Body = require('./body.js');
 const Camera = require('./camera.js');
 const ht3d = require('./ht3d.js');
@@ -43,9 +40,9 @@ windowUtils.init(
 );
 
 
-var updatables = [];
-
+var updatables;
 var scene;
+var body;
 
 var camera = new Camera(
   window.innerWidth / window.innerHeight,
@@ -127,7 +124,7 @@ function setStyles () {
         if (styles.length === ++processed) resolve();
       }
     }
-  }
+  });
 }
 
 function configDirectionalLight (light) {
@@ -208,13 +205,13 @@ function addLights () {
 function resetScene () {
   var makeBody = new Promise(resolve => {
     setStyles().then(() => {
-      body = new Body(window.innerWidth / window.innerHeight, dimensions);
+      body = new Body();
       ht3d.parse(document.body.innerHTML, body);
       resolve();
     });
   });
 
- var makeScene = new Promise(resolve => {
+  var makeScene = new Promise(resolve => {
     updatables = [];
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);

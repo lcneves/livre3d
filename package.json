@@ -4,8 +4,10 @@
   "description": "Framework to create 3D web pages.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint *.js utils/*.js"
+    "build": "browserify index.js -o lib/w3d.js -t [ babelify --presets [ env ] ]",
+    "test": "mocha",
+    "lint": "eslint *.js utils/*.js",
+    "lint:fix": "eslint --fix *.js utils/*.js"
   },
   "repository": {
     "type": "git",
@@ -27,15 +29,20 @@
   },
   "homepage": "https://github.com/lcneves/w3d#readme",
   "dependencies": {
+    "babel-polyfill": "^6.23.0",
     "htmlparser2": "^3.9.2",
     "libcss-w3d": "latest",
     "object-hash": "^1.1.8",
     "three": "^0.85.2"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
     "babel-preset-env": "latest",
     "babelify": "latest",
-    "eslint": "latest"
+    "browserify": "^14.3.0",
+    "eslint": "latest",
+    "mocha": "latest",
+    "npm-run-all": "^4.0.2"
   },
   "browserify": {
     "transform": [

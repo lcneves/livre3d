@@ -42,6 +42,13 @@ module.exports = {
         ],
         "no-console": [
             "warn"
+        ],
+        "no-unused-vars": [
+          "error",
+          {
+            "varsIgnorePattern": "\\w*[iI]gnored\\w*",
+            "argsIgnorePattern": "\\w*[iI]gnored\\w*"
+          }
         ]
     }
 };

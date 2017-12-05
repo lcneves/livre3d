@@ -50,7 +50,7 @@ function getStyle (object) {
 var config = {
   getTagName: function (uuid) {
     var obj = getObject(uuid);
-    return obj.getProperty('tagName');
+    return obj.getProperty('tag');
   },
   getAttributes: function (uuid) {
     var obj = getObject(uuid);
@@ -59,18 +59,24 @@ var config = {
   getSiblings: function (uuid) {
     var obj = getObject(uuid);
     if (!obj.parent)
-      return [ obj ];
+      return [ { tagName: obj.getProperty('tag'), identifier: uuid } ];
 
     var siblings = [];
-    for (let child of obj.parent.children)
-      siblings.push(child.uuid);
+    for (let c of obj.parent.children) {
+      if (c._isw3dObject) {
+        siblings.push({ tagName: c.getProperty('tag'), identifier: c.uuid });
+      }
+    }
     return siblings;
   },
   getAncestors: function (uuid) {
     var obj = getObject(uuid);
     var ancestors = [];
-    while (obj.parent) {
-      ancestors.push(obj.parent);
+    while (obj.parent && obj.parent._isw3dObject) {
+      ancestors.push(
+        { tagName: obj.parent.getProperty('tag'),
+          identifier: obj.parent.uuid
+        });
       obj = obj.parent;
     }
     return ancestors;

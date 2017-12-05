@@ -11,9 +11,10 @@
 const windowUtils = require('./window-utils.js');
 
 const REM_SIZE = 16;
+const PT_TO_PX = 4 / 3;
 
 function parseSize (size) {
-  const supportedFormats = ['px', 'rem', 'em', 'vw', 'vh', 'vd', '%'];
+  const supportedFormats = ['px', 'pt', 'rem', 'em', 'vw', 'vh', 'vd', '%'];
 
   if (typeof size === 'number') {
     return {
@@ -24,8 +25,13 @@ function parseSize (size) {
 
   else if (typeof size === 'string') {
 
-    if (size === 'initial') {
-      return undefined;
+    switch (size) {
+      case 'initial':
+      case 'auto':
+      case 'none':
+        return undefined;
+      default:
+        break;
     }
 
     if (!isNaN(size)) {
@@ -66,7 +72,7 @@ function parseSize (size) {
 
 function convert (object, parameter, unit) {
 
-  var parsed = parseSize(object.getStyle(parameter));
+  var parsed = parseSize(object.style[parameter]);
   if (parsed === undefined) {
     return undefined;
   }
@@ -77,6 +83,10 @@ function convert (object, parameter, unit) {
 
     case 'px':
       quantum = parsed.quantum;
+      break;
+
+    case 'pt':
+      quantum = parsed.quantum * PT_TO_PX;
       break;
 
     case 'rem':

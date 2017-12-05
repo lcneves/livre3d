@@ -14,6 +14,7 @@ const objectCommons = require('./object-commons.js');
 const objectUtils = require('./object-utils.js');
 const Object3D = require('./object3d.js');
 const cache = require('./cache.js');
+const style = require('./style.js');
 
 function makeTexture (character, style) {
   var canvas = document.createElement('canvas');
@@ -81,7 +82,7 @@ objectUtils.importPrototype(CharSprite.prototype, charSpritePrototype);
 class Word2D extends Object3D {
   // Style could be built for each new word, but it is more practical to
   // make it only once for the whole paragraph.
-  constructor (word, style, parentObject) {
+  constructor (word, style) {
     if (!word) {
       throw new Error('Invalid word!');
     }
@@ -96,8 +97,6 @@ class Word2D extends Object3D {
       class: '',
       id: ''
     };
-    this.makeStyle();
-    this._style['margin-right'] = this.getStyle('word-spacing');
 
     var charArray = word.split('');
 
@@ -112,6 +111,13 @@ class Word2D extends Object3D {
 
       this.add(sprite);
     }
+  }
+
+  get style () {
+    // TODO: This is an ugly hack. Spacing should be handled by rendering.
+    let s = style.getStyle(this);
+    s['margin-right'] = s['word-spacing'];
+    return s;
   }
 }
 
