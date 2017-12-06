@@ -316,7 +316,8 @@ function getOuterSize (object) {
           );
         }
         else {
-          dimensions[AXES[i]] = undefined;
+          // TODO: This is not true for the cross axis if it can wrap.
+          dimensions[AXES[i]] = object.minContentContribution[AXES[i]];
         }
       }
     }
@@ -333,9 +334,7 @@ function getMinContentContribution (object, wrap, mainAxis) {
   for (let child of object.children) {
     if (!child._ignoreSize) {
       for (let axis of AXES) {
-        if (
-          axis === mainAxis && wrap === 'nowrap'
-        ) {
+        if (axis === mainAxis && wrap === 'nowrap') {
           virtualBox[axis] += child.minContentContribution[axis];
         }
         else {

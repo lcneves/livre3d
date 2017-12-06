@@ -5,25 +5,31 @@ word {
   flex-direction: row
 }
 
+body, div, nav, footer, p, h1, h2, h3, h4, h5, h6 {
+  display: flex;
+}
+
+span, word {
+  display: inline-flex;
+}
+
 body {
   width: 100vw;
   height: 100vh;
-  flex-direction: stack;
+  padding: 8px;
+  flex-direction: column;
   font-family: sans-serif;
-  font-size: 16;
+  font-size: 16px;
   font-weight: normal;
-  color: ff000000;
-  background-color: ffffffff;
   word-spacing: 0.3em
 }
 
-div {
+div, nav, footer {
   align-self: stretch
 }
 
 p, h1, h2, h3, h4, h5, h6 {
   align-self: stretch;
-  margin: 0 1em 0;
   flex-direction: row;
   flex-wrap: wrap
 }
@@ -33,26 +39,26 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: 32;
+  font-size: 32px;
 }
 
 h2 {
-  font-size: 24;
+  font-size: 24px;
 }
 
 h3 {
-  font-size: 18.7;
+  font-size: 18.7px;
 }
 
 h4 {
-  font-size: 16;
+  font-size: 16px;
 }
 
 h5 {
-  font-size: 13.3;
+  font-size: 13.3px;
 }
 
 h6 {
-  font-size: 10.7;
+  font-size: 10.7px;
 }
 `

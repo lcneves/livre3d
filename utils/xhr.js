@@ -1,8 +1,8 @@
 /*
-* utils.js
+* xhr.js
 * Copyright 2017 Lucas Neves <lcneves@gmail.com>
 *
-* Utility tools.
+* XmlHttpRequest utility tool.
 * Part of the w3d project.
 */
 
@@ -11,26 +11,23 @@
 // From https://mathiasbynens.be/notes/xhr-responsetype-json
 function xhr (url, responseType) {
   return new Promise((resolve, reject) => {
-    var xhr = new XMLHttpRequest();
+    var x = new XMLHttpRequest();
 
     if (responseType)
-      xhr.responseType = responseType;
+      x.responseType = responseType;
 
-    xhr.open('get', url, true);
+    x.open('get', url, true);
 
-    xhr.onreadystatechange = function() {
-      var status;
-      var data;
-      if (xhr.readyState === 4) { // `DONE`
-        status = xhr.status;
-        if (status === 200) {
-          resolve(data);
+    x.onreadystatechange = function() {
+      if (x.readyState === 4) { // `DONE`
+        if (x.status === 200) {
+          resolve(x.responseText);
         } else {
-          reject(status);
+          reject(x.status);
         }
       }
     };
-    xhr.send();
+    x.send();
   });
 }
 

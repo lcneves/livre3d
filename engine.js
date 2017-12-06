@@ -7,11 +7,6 @@
 
 'use strict';
 
-// First things first: let's hide all boring 2D content.
-for (let c of document.body.children)
-  c.style.display = 'none';
-document.body.style.margin = '0';
-
 const THREE = require('three');
 
 const style = require('./style.js');
@@ -57,7 +52,6 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.style.display = 'block';
-document.body.appendChild(renderer.domElement);
 
 // Resize canvas on window resize
 window.addEventListener('resize', function () {
@@ -220,8 +214,15 @@ function resetScene () {
   });
 
   Promise.all([ makeBody, makeScene ]).then(() => {
+    for (let c of document.body.children)
+      c.style.display = 'none';
+    document.body.style.margin = '0';
+
+    document.body.appendChild(renderer.domElement);
     scene.add(body);
     render();
+
+    window.body = body; // Debug only, delete before production!!
   });
 }
 
